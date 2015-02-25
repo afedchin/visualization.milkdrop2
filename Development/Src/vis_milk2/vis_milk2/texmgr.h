@@ -38,6 +38,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <d3d9.h>
 #include "../ns-eel2/ns-eel.h"
 #include "md_defines.h"
+#include "../DX11/DX11Context.h"
 
 #define TEXMGR_ERROR_MASK                 0x0F
 #define TEXMGR_ERR_SUCCESS                0
@@ -59,7 +60,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 typedef struct
 {
-	LPDIRECT3DTEXTURE9     pSurface;
+	ID3D11Resource*     pSurface;
 	int                    img_w, img_h;
     /*
 	int                    tex_w, tex_h;
@@ -95,7 +96,7 @@ public:
 	~texmgr();
 
 	// members
-	void Init(LPDIRECT3DDEVICE9 lpDD);           // DirectDraw object
+  void Init(DX11Context* lpDD);           // DirectDraw object
 	int  LoadTex(wchar_t *szFilename, int iSlot, char *szInitCode, char *szCode, float time, int frame, unsigned int ck);
 	void KillTex(int iSlot);
 	void Finish();
@@ -114,7 +115,7 @@ protected:
 	void StripLinefeedCharsAndComments(char *src, char *dest);
 
 	// data
-	LPDIRECT3DDEVICE9 m_lpDD;					
+	DX11Context* m_lpDD;					
 };
 
 #endif

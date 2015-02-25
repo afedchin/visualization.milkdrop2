@@ -1902,7 +1902,7 @@ void CState::RecompileExpressions(int flags, int bReInit)
 
 void CState::RandomizePresetVars()
 {
-    m_rand_preset = D3DXVECTOR4(FRAND, FRAND, FRAND, FRAND);
+    m_rand_preset = XMFLOAT4(FRAND, FRAND, FRAND, FRAND);
 
     int k = 0;
     do

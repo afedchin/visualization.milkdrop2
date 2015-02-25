@@ -22,9 +22,13 @@ extern "C" ADDON_STATUS ADDON_Create(void* hdl, void* props)
 
 	swprintf(g_plugin.m_szPluginsDirPath, L"%hs\\", visprops->presets);
 
-	g_plugin.PluginPreInitialize(0,0);
-	g_plugin.PluginInitialize((LPDIRECT3DDEVICE9)visprops->device, visprops->x, visprops->y, visprops->width, visprops->height, visprops->pixelRatio);
-	IsInitialized = true;
+  if (FALSE == g_plugin.PluginPreInitialize(0, 0))
+    return ADDON_STATUS_UNKNOWN;
+
+  if (FALSE == g_plugin.PluginInitialize((ID3D11Device*)visprops->device, (ID3D11DeviceContext*)visprops->context, visprops->x, visprops->y, visprops->width, visprops->height, visprops->pixelRatio))
+    return ADDON_STATUS_UNKNOWN;
+
+  IsInitialized = true;
 	return ADDON_STATUS_NEED_SETTINGS;
 //  return ADDON_STATUS_NEED_SAVEDSETTINGS; // We need some settings to be saved later before we quit this plugin
 }
@@ -97,7 +101,9 @@ extern "C" bool OnAction(long action, const void *param)
 	}
 	else if (action == VIS_ACTION_PREV_PRESET)
 	{
-	}
+    g_plugin.PrevPreset(1.0f);
+    bHandled = true;
+  }
 	else if (action == VIS_ACTION_LOAD_PRESET && param)
 	{
 		g_plugin.m_nCurrentPreset = (*(int *)param) + g_plugin.m_nDirs;

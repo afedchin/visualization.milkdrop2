@@ -65,7 +65,7 @@ void texmgr::Finish()
 	// DO NOT RELEASE OR DELETE m_lpDD; CLIENT SHOULD DO THIS!
 }
 
-void texmgr::Init(LPDIRECT3DDEVICE9 lpDD)
+void texmgr::Init(DX11Context* lpDD)
 {
 	m_lpDD = lpDD;
 
@@ -207,6 +207,31 @@ int texmgr::LoadTex(wchar_t *szFilename, int iSlot, char *szInitCode, char *szCo
 
 		wcscpy(m_tex[iSlot].szFileName, szFilename);
 
+    HRESULT hr = m_lpDD->CreateTextureFromFile(szFilename, &m_tex[iSlot].pSurface);
+    if (hr != D3D_OK)
+    {
+      switch (hr)
+      {
+      case E_OUTOFMEMORY:
+      case D3DERR_OUTOFVIDEOMEMORY:
+        return TEXMGR_ERR_OUTOFMEM;
+      default:
+        return TEXMGR_ERR_BADFILE;
+      }
+    }
+
+    D3D11_TEXTURE2D_DESC tex2DDesc;
+    D3D11_RESOURCE_DIMENSION type;
+    m_tex[iSlot].pSurface->GetType(&type);
+
+    if (type == D3D11_RESOURCE_DIMENSION_TEXTURE2D)
+      reinterpret_cast<ID3D11Texture2D*>(m_tex[iSlot].pSurface)->GetDesc(&tex2DDesc);
+    else
+    {
+      SafeRelease(m_tex[iSlot].pSurface);
+      return TEXMGR_ERR_BADFILE;
+    }
+    /*
         D3DXIMAGE_INFO info;
         HRESULT hr = D3DXCreateTextureFromFileExW(
           m_lpDD,
@@ -239,8 +264,10 @@ int texmgr::LoadTex(wchar_t *szFilename, int iSlot, char *szInitCode, char *szCo
 
         m_tex[iSlot].img_w = info.Width;
 		m_tex[iSlot].img_h = info.Height;
-
-        /*
+    */
+    m_tex[iSlot].img_w = tex2DDesc.Width;
+    m_tex[iSlot].img_h = tex2DDesc.Height;
+    /*
 		unsigned int w_img;
 		unsigned int h_img;
 		unsigned int img_color_channels;

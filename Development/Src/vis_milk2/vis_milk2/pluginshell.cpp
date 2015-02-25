@@ -242,7 +242,7 @@ int       CPluginShell::GetBitDepth()
 {
 	return m_lpDX->GetBitDepth();
 };
-LPDIRECT3DDEVICE9 CPluginShell::GetDevice()
+DX11Context* CPluginShell::GetDevice()
 {
 	if (m_lpDX) return m_lpDX->m_lpDevice; else return NULL;
 };
@@ -350,7 +350,7 @@ void CPluginShell::StuffParams(DXCONTEXT_PARAMS *pParams)
 
 int CPluginShell::InitDirectX()
 {
-	m_lpDX = new DXContext(m_device, m_szConfigIniFile);
+	m_lpDX = new DXContext(m_device, m_context, m_szConfigIniFile);
 
 	if (!m_lpDX)
 	{
@@ -659,13 +659,14 @@ int CPluginShell::PluginPreInitialize(HWND hWinampWnd, HINSTANCE hWinampInstance
 	return TRUE;
 }
 
-int CPluginShell::PluginInitialize( LPDIRECT3DDEVICE9 device, int iPosX, int iPosY, int iWidth, int iHeight, float pixelRatio )
+int CPluginShell::PluginInitialize( ID3D11Device* device, ID3D11DeviceContext* context, int iPosX, int iPosY, int iWidth, int iHeight, float pixelRatio )
 {
 	// note: initialize GDI before DirectX.  Also separate them because
 	// when we change windowed<->fullscreen, or lose the device and restore it,
 	// we don't want to mess with any (persistent) GDI stuff.
 
 	m_device = device;
+  m_context = context;
 
 	if (!InitDirectX())        return FALSE;  // gives its own error messages
 	m_lpDX->m_client_width = iWidth;
@@ -1324,20 +1325,22 @@ void CPluginShell::DrawDarkTranslucentBox(RECT* pr)
 	if (m_vjd3d9_device)
 		return;
 
-	m_lpDX->m_lpDevice->SetVertexShader(NULL);
-	m_lpDX->m_lpDevice->SetPixelShader(NULL);
-	m_lpDX->m_lpDevice->SetFVF(SIMPLE_VERTEX_FORMAT);
+	m_lpDX->m_lpDevice->SetVertexShader(NULL, NULL);
+	m_lpDX->m_lpDevice->SetPixelShader(NULL, NULL);
+	//m_lpDX->m_lpDevice->SetFVF(SIMPLE_VERTEX_FORMAT); // TODO DX11
 	m_lpDX->m_lpDevice->SetTexture(0, NULL);
 
-	m_lpDX->m_lpDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-	m_lpDX->m_lpDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	m_lpDX->m_lpDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+  m_lpDX->m_lpDevice->SetBlendState(true, D3D11_BLEND_SRC_ALPHA, D3D11_BLEND_INV_SRC_ALPHA);
+	//m_lpDX->m_lpDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+	//m_lpDX->m_lpDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+	//m_lpDX->m_lpDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 
-	m_lpDX->m_lpDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
-	m_lpDX->m_lpDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
-	m_lpDX->m_lpDevice->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
-	m_lpDX->m_lpDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-	m_lpDX->m_lpDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
+  m_lpDX->m_lpDevice->SetShader(2);
+	//m_lpDX->m_lpDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+	//m_lpDX->m_lpDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
+	//m_lpDX->m_lpDevice->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	//m_lpDX->m_lpDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
+	//m_lpDX->m_lpDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
 
 	// set up a quad
 	SIMPLEVERTEX verts[4];
@@ -1351,11 +1354,13 @@ void CPluginShell::DrawDarkTranslucentBox(RECT* pr)
 		verts[i].Diffuse = (m_screenmode==DESKTOP) ? 0xE0000000 : 0xD0000000;
 	}
 
-	m_lpDX->m_lpDevice->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, verts, sizeof(SIMPLEVERTEX));
+	m_lpDX->m_lpDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, 2, verts, sizeof(SIMPLEVERTEX));
 
 	// undo unusual state changes:
-	m_lpDX->m_lpDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
-	m_lpDX->m_lpDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+  m_lpDX->m_lpDevice->SetDepth(true);
+  m_lpDX->m_lpDevice->SetBlendState(false);
+	//m_lpDX->m_lpDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
+	//m_lpDX->m_lpDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 }
 
 void CPluginShell::AlignWaves()

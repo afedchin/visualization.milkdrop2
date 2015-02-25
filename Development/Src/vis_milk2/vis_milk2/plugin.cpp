@@ -506,6 +506,11 @@ Order of Function Calls
 //#include "../nu/AutoCharFn.h"
 #include "..\nu\AutoWide.h"
 
+#include <d3dcompiler.h>
+#include <d3d11shader.h>
+
+#pragma comment(lib,"d3dcompiler.lib")
+
 FILE* XBMC_WOpen( const wchar_t* WFilename, const wchar_t* WMode )
 {
 	int SizeNeeded = WideCharToMultiByte(CP_UTF8, 0, &WFilename[0], -1, NULL, 0, NULL, NULL);
@@ -1359,7 +1364,7 @@ int CPlugin::AllocateMyDX9Stuff()
 
     int nNewCanvasStretch = (m_nCanvasStretch == 0) ? 100 : m_nCanvasStretch;
 
-    DWORD PSVersion = GetCaps()->PixelShaderVersion & 0xFFFF;  // 0x0300, etc.
+    /*DWORD PSVersion = GetCaps()->PixelShaderVersion & 0xFFFF;  // 0x0300, etc.
     if (PSVersion >= 0x0300) 
         m_nMaxPSVersion_DX9 = MD2_PS_3_0;
 		else if (PSVersion > 0x0200) 
@@ -1367,7 +1372,17 @@ int CPlugin::AllocateMyDX9Stuff()
     else if (PSVersion >= 0x0200) 
         m_nMaxPSVersion_DX9 = MD2_PS_2_0;
     else 
-        m_nMaxPSVersion_DX9 = MD2_PS_NONE;
+        m_nMaxPSVersion_DX9 = MD2_PS_NONE;*/
+
+    D3D_FEATURE_LEVEL featureLevel = GetDevice()->GetFeatureLevel();
+    if (featureLevel >= D3D_FEATURE_LEVEL_9_3)
+      m_nMaxPSVersion_DX9 = MD2_PS_3_0;
+    else if (featureLevel >= D3D_FEATURE_LEVEL_9_2)
+      m_nMaxPSVersion_DX9 = MD2_PS_2_X;
+    else if (featureLevel >= D3D_FEATURE_LEVEL_9_1)
+      m_nMaxPSVersion_DX9 = MD2_PS_2_0;
+    else
+      m_nMaxPSVersion_DX9 = MD2_PS_NONE;
 
     if (m_nMaxPSVersion_ConfigPanel == -1)
         m_nMaxPSVersion = m_nMaxPSVersion_DX9;
@@ -1552,6 +1567,7 @@ int CPlugin::AllocateMyDX9Stuff()
     //-------------------------------------
     if (m_nMaxPSVersion > MD2_PS_NONE)
     {
+        /* DX11: vertex declarations not required. DX11Context uses needed layout
         // Create vertex declarations (since we're not using FVF anymore)
         if (D3D_OK != GetDevice()->CreateVertexDeclaration( g_MyVertDecl, &m_pMyVertDecl )) 
         {
@@ -1573,7 +1589,7 @@ int CPlugin::AllocateMyDX9Stuff()
 // 		    dumpmsg(buf); 
 // 		    MessageBoxW(GetPluginWindow(), buf, WASABI_API_LNGSTRINGW_BUF(IDS_MILKDROP_ERROR,title,sizeof(title)), MB_OK|MB_SETFOREGROUND|MB_TOPMOST );
 		    return false;
-		}
+		}*/
 
 		// Load the FALLBACK shaders...
 		if (!RecompilePShader(m_szDefaultWarpPShaderText, &m_fallbackShaders_ps.warp, SHADER_WARP, true, 2))
@@ -1691,10 +1707,10 @@ int CPlugin::AllocateMyDX9Stuff()
 	    }
 
 	    // clip texsize by max. from caps
-	    if ((DWORD)m_nTexSizeX > GetCaps()->MaxTextureWidth && GetCaps()->MaxTextureWidth>0)
+	    /*if ((DWORD)m_nTexSizeX > GetCaps()->MaxTextureWidth && GetCaps()->MaxTextureWidth>0)
 		    m_nTexSizeX = GetCaps()->MaxTextureWidth;
 	    if ((DWORD)m_nTexSizeY > GetCaps()->MaxTextureHeight && GetCaps()->MaxTextureHeight>0)
-		    m_nTexSizeY = GetCaps()->MaxTextureHeight;
+		    m_nTexSizeY = GetCaps()->MaxTextureHeight;*/
 
         // apply canvas stretch
         m_nTexSizeX = (m_nTexSizeX * 100)/nNewCanvasStretch;
@@ -1709,41 +1725,43 @@ int CPlugin::AllocateMyDX9Stuff()
 	    }
 	    
         // snap to 16x16 blocks
-        m_nTexSizeX = ((m_nTexSizeX+15)/16)*16;
-        m_nTexSizeY = ((m_nTexSizeY+15)/16)*16;
+        // TODO DX11 or use own zBuffer
+        //m_nTexSizeX = ((m_nTexSizeX+15)/16)*16;
+        //m_nTexSizeY = ((m_nTexSizeY+15)/16)*16;
 
 		// determine format for VS1/VS2
-		D3DFORMAT fmt;
+		DXGI_FORMAT fmt;
 		switch(m_nTexBitsPerCh) {
-		  case 5:  fmt = D3DFMT_R5G6B5   ; break;
-		  case 8:  fmt = D3DFMT_X8R8G8B8 ; break;
-		  case 10: fmt = D3DFMT_A2R10G10B10; break;  // D3DFMT_A2W10V10U10 or D3DFMT_A2R10G10B10 or D3DFMT_A2B10G10R10
-		  case 16: fmt = D3DFMT_A16B16G16R16F; break; 
-		  case 32: fmt = D3DFMT_A32B32G32R32F; break; //FIXME
-		  default: fmt = D3DFMT_X8R8G8B8 ; break;
+		  //case 5:  fmt = D3DFMT_R5G6B5   ; break;
+		  case 8:  fmt = DXGI_FORMAT_B8G8R8A8_UNORM /*D3DFMT_X8R8G8B8*/ ; break;
+		  //case 10: fmt = D3DFMT_A2R10G10B10; break;  // D3DFMT_A2W10V10U10 or D3DFMT_A2R10G10B10 or D3DFMT_A2B10G10R10
+		  //case 16: fmt = D3DFMT_A16B16G16R16F; break; 
+		  //case 32: fmt = D3DFMT_A32B32G32R32F; break; //FIXME
+      default: fmt = DXGI_FORMAT_B8G8R8A8_UNORM /*D3DFMT_X8R8G8B8*/; break;
 		}
 
 	    // reallocate
 	    bool bSuccess = false;
-        DWORD vs_flags = D3DUSAGE_RENDERTARGET;// | D3DUSAGE_AUTOGENMIPMAP;//FIXME! (make automipgen optional)
-		bool bRevertedBitDepth = false;
+        //DWORD vs_flags = D3DUSAGE_RENDERTARGET;// | D3DUSAGE_AUTOGENMIPMAP;//FIXME! (make automipgen optional)
+        DWORD vs_flags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;// | D3DUSAGE_AUTOGENMIPMAP;//FIXME! (make automipgen optional)
+        bool bRevertedBitDepth = false;
 	    do
 	    {
 		    SafeRelease(m_lpVS[0]);
 		    SafeRelease(m_lpVS[1]);
 
 		    // create VS1
-            bSuccess = (GetDevice()->CreateTexture(m_nTexSizeX, m_nTexSizeY, 1, vs_flags, fmt, D3DPOOL_DEFAULT, &m_lpVS[0], NULL) == D3D_OK);
+            bSuccess = (GetDevice()->CreateTexture(m_nTexSizeX, m_nTexSizeY, 1, vs_flags, fmt, &m_lpVS[0]));
 			if (!bSuccess) 
 			{
-				bSuccess = (GetDevice()->CreateTexture(m_nTexSizeX, m_nTexSizeY, 1, vs_flags, GetBackBufFormat(), D3DPOOL_DEFAULT, &m_lpVS[0], NULL) == D3D_OK);
+        bSuccess = (GetDevice()->CreateTexture(m_nTexSizeX, m_nTexSizeY, 1, vs_flags, DXGI_FORMAT_B8G8R8A8_UNORM, &m_lpVS[0]));
 				if (bSuccess)
-					fmt = GetBackBufFormat();
+          fmt = DXGI_FORMAT_B8G8R8A8_UNORM /*GetBackBufFormat()*/;
 			}
 
 			// create VS2
 			if (bSuccess)
-                bSuccess = (GetDevice()->CreateTexture(m_nTexSizeX, m_nTexSizeY, 1, vs_flags, fmt, D3DPOOL_DEFAULT, &m_lpVS[1], NULL) == D3D_OK);
+                bSuccess = (GetDevice()->CreateTexture(m_nTexSizeX, m_nTexSizeY, 1, vs_flags, fmt, &m_lpVS[1]));
 
 			if (!bSuccess) 
 			{
@@ -1812,8 +1830,9 @@ int CPlugin::AllocateMyDX9Stuff()
         #if (NUM_BLUR_TEX>0)
             int w = m_nTexSizeX;
             int h = m_nTexSizeY;
-            DWORD blurtex_flags = D3DUSAGE_RENDERTARGET;// | D3DUSAGE_AUTOGENMIPMAP;//FIXME! (make automipgen optional)
-            for (int i=0; i<NUM_BLUR_TEX; i++) 
+            //DWORD blurtex_flags = D3DUSAGE_RENDERTARGET;// | D3DUSAGE_AUTOGENMIPMAP;//FIXME! (make automipgen optional)
+            DWORD blurtex_flags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+            for (int i = 0; i<NUM_BLUR_TEX; i++)
             {
                 // main VS = 1024
                 // blur0 = 512
@@ -1829,7 +1848,7 @@ int CPlugin::AllocateMyDX9Stuff()
                 }
                 int w2 = ((w+3)/16)*16;
                 int h2 = ((h+3)/4)*4;
-                bSuccess = (GetDevice()->CreateTexture(w2, h2, 1, blurtex_flags, fmt, D3DPOOL_DEFAULT, &m_lpBlur[i], NULL) == D3D_OK);
+                bSuccess = (GetDevice()->CreateTexture(w2, h2, 1, blurtex_flags, fmt, &m_lpBlur[i]));
                 m_nBlurTexW[i] = w2;
                 m_nBlurTexH[i] = h2;
                 if (!bSuccess) 
@@ -1941,7 +1960,11 @@ int CPlugin::AllocateMyDX9Stuff()
             //p->tv_orig = v;
             p->rad = rad;
             p->ang = ang;
-            p->Diffuse = 0xFFFFFFFF;
+            //p->Diffuse = 0xFFFFFFFF;
+            p->a = 1.0f;
+            p->r = 1.0f;
+            p->g = 1.0f;
+            p->b = 1.0f;
         }
     }
 
@@ -2017,11 +2040,13 @@ int CPlugin::AllocateMyDX9Stuff()
 		// (m_lpDDSTitle[0]), which can then be drawn onto the screen on polys.
 
         HRESULT hr;
-
+        bool bSuccess;
 		do
 		{
-			hr = D3DXCreateTexture(GetDevice(), m_nTitleTexSizeX, m_nTitleTexSizeY, 1, D3DUSAGE_RENDERTARGET, GetBackBufFormat(), D3DPOOL_DEFAULT, &m_lpDDSTitle);
-			if (hr != D3D_OK)
+      bSuccess = GetDevice()->CreateTexture(m_nTitleTexSizeX, m_nTitleTexSizeY, 1, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE, DXGI_FORMAT_B8G8R8A8_UNORM, &m_lpDDSTitle);
+			//hr = D3DXCreateTexture(GetDevice(), m_nTitleTexSizeX, m_nTitleTexSizeY, 1, D3DUSAGE_RENDERTARGET, GetBackBufFormat(), D3DPOOL_DEFAULT, &m_lpDDSTitle);
+			//if (hr != D3D_OK)
+			if (!bSuccess)
 			{
 				if (m_nTitleTexSizeY < m_nTitleTexSizeX)
 				{
@@ -2034,9 +2059,10 @@ int CPlugin::AllocateMyDX9Stuff()
 				}
 			}
 		}
-		while (hr != D3D_OK && m_nTitleTexSizeX > 16);
+		//while (hr != D3D_OK && m_nTitleTexSizeX > 16);
+    while (!bSuccess && m_nTitleTexSizeX > 16);
 
-		if (hr != D3D_OK)
+		if (!bSuccess)
 		{
 			//dumpmsg("Init: -WARNING-: Title texture could not be created!");
             m_lpDDSTitle = NULL;
@@ -2229,13 +2255,16 @@ bool CPlugin::AddNoiseTex(const wchar_t* szTexName, int size, int zoom_factor)
     //           4/8/16... = cubic interp.
 
     wchar_t buf[2048], title[64];
+    DX11Context* lpDevice = GetDevice();
 
     // Synthesize noise texture(s)
-    LPDIRECT3DTEXTURE9 pNoiseTex = NULL;
+    ID3D11Texture2D *pNoiseTex = NULL, *pStaging = NULL;
     // try twice - once with mips, once without.
-    for (int i=0; i<2; i++) 
+    int i;
+    for (i=0; i<2; i++) 
     {
-        if (D3D_OK != GetDevice()->CreateTexture(size, size, i, D3DUSAGE_DYNAMIC | (i ? 0 : D3DUSAGE_AUTOGENMIPMAP), D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &pNoiseTex, NULL))
+        if (!lpDevice->CreateTexture(size, size, i, /*D3D11_BIND_RENDER_TARGET |*/ D3D11_BIND_SHADER_RESOURCE, DXGI_FORMAT_R8G8B8A8_UNORM, &pNoiseTex, 
+                                     0/*(i ? 0 : D3D11_RESOURCE_MISC_GENERATE_MIPS)*/, D3D11_USAGE_DYNAMIC))
         {
             if (i==1) 
             {
@@ -2251,8 +2280,13 @@ bool CPlugin::AddNoiseTex(const wchar_t* szTexName, int size, int zoom_factor)
             break;
     }
 
-    D3DLOCKED_RECT r;
-    if (D3D_OK != pNoiseTex->LockRect(0, &r, NULL, D3DLOCK_DISCARD))
+    //if (!lpDevice->CreateTexture(size, size, i, 0, DXGI_FORMAT_R8G8B8A8_UNORM, &pStaging, 0, D3D11_USAGE_STAGING))
+    //  return false;
+
+    //D3DLOCKED_RECT r;
+    D3D11_MAPPED_SUBRESOURCE r;
+    if (!lpDevice->LockRect(pNoiseTex, 0, D3D11_MAP_WRITE_DISCARD, &r))
+    //if (D3D_OK != pNoiseTex->LockRect(0, &r, NULL, D3DLOCK_DISCARD))
     {
 /*
 		WASABI_API_LNGSTRINGW_BUF(IDS_COULD_NOT_LOCK_NOISE_TEXTURE,buf,sizeof(buf));
@@ -2262,7 +2296,7 @@ bool CPlugin::AddNoiseTex(const wchar_t* szTexName, int size, int zoom_factor)
 		return false;
     }
 
-    if (r.Pitch < size*4)
+    if (r.RowPitch < size*4)
     {
 /*
 		WASABI_API_LNGSTRINGW_BUF(IDS_NOISE_TEXTURE_BYTE_LAYOUT_NOT_RECOGNISED,buf,sizeof(buf));
@@ -2273,8 +2307,8 @@ bool CPlugin::AddNoiseTex(const wchar_t* szTexName, int size, int zoom_factor)
     }
 
     // write to the bits...
-    DWORD* dst = (DWORD*)r.pBits;
-    int dwords_per_line = r.Pitch / sizeof(DWORD);
+    DWORD* dst = (DWORD*)r.pData;
+    int dwords_per_line = r.RowPitch / sizeof(DWORD);
     int RANGE = (zoom_factor > 1) ? 216 : 256;
     for (int y=0; y<size; y++) {
         LARGE_INTEGER q;
@@ -2303,7 +2337,7 @@ bool CPlugin::AddNoiseTex(const wchar_t* szTexName, int size, int zoom_factor)
     if (zoom_factor > 1) 
     {
         // first go ACROSS, blending cubically on X, but only on the main lines.
-        DWORD* dst = (DWORD*)r.pBits;
+        DWORD* dst = (DWORD*)r.pData;
         for (int y=0; y<size; y+=zoom_factor)
             for (int x=0; x<size; x++) 
                 if (x % zoom_factor)
@@ -2343,7 +2377,10 @@ bool CPlugin::AddNoiseTex(const wchar_t* szTexName, int size, int zoom_factor)
     }
 
     // unlock texture
-    pNoiseTex->UnlockRect(0);
+    //pNoiseTex->UnlockRect(0);
+    lpDevice->UnlockRect(pNoiseTex, 0);
+    //lpDevice->CopyResource(pNoiseTex, pStaging);
+    SafeRelease(pStaging);
 
     // add it to m_textures[].  
     TexInfo x;  
@@ -2370,14 +2407,16 @@ bool CPlugin::AddNoiseVol(const wchar_t* szTexName, int size, int zoom_factor)
     //           4/8/16... = cubic interp.
 
     wchar_t buf[2048], title[64];
-
+    DX11Context* lpDevice = GetDevice();
     // Synthesize noise texture(s)
-    LPDIRECT3DVOLUMETEXTURE9 pNoiseTex = NULL;
+    ID3D11Texture3D* pNoiseTex = NULL, *pStaging = NULL;
     // try twice - once with mips, once without.
     // NO, TRY JUST ONCE - DX9 doesn't do auto mipgen w/volume textures.  (Debug runtime complains.)
-    for (int i=1; i<2; i++) 
+    int i;
+    for (i=1; i<2; i++) 
     {
-        if (D3D_OK != GetDevice()->CreateVolumeTexture(size, size, size, i, D3DUSAGE_DYNAMIC | (i ? 0 : D3DUSAGE_AUTOGENMIPMAP), D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &pNoiseTex, NULL))
+        //if (D3D_OK != GetDevice()->CreateVolumeTexture(size, size, size, i, D3DUSAGE_DYNAMIC | (i ? 0 : D3DUSAGE_AUTOGENMIPMAP), D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &pNoiseTex, NULL))
+        if (!GetDevice()->CreateVolumeTexture(size, size, size, i, D3D11_BIND_SHADER_RESOURCE, DXGI_FORMAT_R8G8B8A8_UNORM, &pNoiseTex, 0/*(i ? 0 : D3DUSAGE_AUTOGENMIPMAP)*/, D3D11_USAGE_DYNAMIC))
         {
             if (i==1) 
             {
@@ -2392,8 +2431,13 @@ bool CPlugin::AddNoiseVol(const wchar_t* szTexName, int size, int zoom_factor)
         else
             break;
     }
-    D3DLOCKED_BOX r;
-    if (D3D_OK != pNoiseTex->LockBox(0, &r, NULL, D3DLOCK_DISCARD))
+
+    //if (!lpDevice->CreateVolumeTexture(size, size, size, i, 0, DXGI_FORMAT_R8G8B8A8_UNORM, &pStaging, 0, D3D11_USAGE_STAGING))
+    //  return false;
+
+    //D3DLOCKED_BOX r;
+    D3D11_MAPPED_SUBRESOURCE r;
+    if (!lpDevice->LockRect(pNoiseTex, 0, D3D11_MAP_WRITE_DISCARD, &r))
     {
 /*
 		WASABI_API_LNGSTRINGW_BUF(IDS_COULD_NOT_LOCK_3D_NOISE_TEXTURE,buf,sizeof(buf));
@@ -2402,7 +2446,7 @@ bool CPlugin::AddNoiseVol(const wchar_t* szTexName, int size, int zoom_factor)
 */
 		return false;
     }
-    if (r.RowPitch < size*4 || r.SlicePitch < size*size*4)
+    if (r.RowPitch < size*4 || r.DepthPitch < size*size*4)
     {
 /*
 		WASABI_API_LNGSTRINGW_BUF(IDS_3D_NOISE_TEXTURE_BYTE_LAYOUT_NOT_RECOGNISED,buf,sizeof(buf));
@@ -2412,11 +2456,11 @@ bool CPlugin::AddNoiseVol(const wchar_t* szTexName, int size, int zoom_factor)
 		return false;
     }
     // write to the bits...
-    int dwords_per_slice = r.SlicePitch / sizeof(DWORD);
+    int dwords_per_slice = r.DepthPitch / sizeof(DWORD);
     int dwords_per_line = r.RowPitch / sizeof(DWORD);
     int RANGE = (zoom_factor > 1) ? 216 : 256;
     for (int z=0; z<size; z++) {
-        DWORD* dst = (DWORD*)r.pBits + z*dwords_per_slice;
+        DWORD* dst = (DWORD*)r.pData + z*dwords_per_slice;
         for (int y=0; y<size; y++) {
             LARGE_INTEGER q;
             QueryPerformanceCounter(&q);
@@ -2445,7 +2489,7 @@ bool CPlugin::AddNoiseVol(const wchar_t* szTexName, int size, int zoom_factor)
     if (zoom_factor > 1) 
     {
         // first go ACROSS, blending cubically on X, but only on the main lines.
-        DWORD* dst = (DWORD*)r.pBits;
+        DWORD* dst = (DWORD*)r.pData;
 		int z;
         for (z=0; z<size; z+=zoom_factor)
             for (int y=0; y<size; y+=zoom_factor)
@@ -2509,7 +2553,10 @@ bool CPlugin::AddNoiseVol(const wchar_t* szTexName, int size, int zoom_factor)
     }
 
     // unlock texture
-    pNoiseTex->UnlockBox(0);
+    //pNoiseTex->UnlockBox(0);
+    lpDevice->UnlockRect(pNoiseTex, 0);
+    //lpDevice->CopyResource(pNoiseTex, pStaging);
+    SafeRelease(pStaging);
 
     // add it to m_textures[].  
     TexInfo x;  
@@ -2555,7 +2602,7 @@ CShaderParams::~CShaderParams() {
     texsize_params.clear();
 }
 
-void CShaderParams::OnTextureEvict(LPDIRECT3DBASETEXTURE9 texptr)
+void CShaderParams::OnTextureEvict(ID3D11Resource* texptr)
 {
     for (int i=0; i<sizeof(m_texture_bindings)/sizeof(m_texture_bindings[0]); i++)
         if (m_texture_bindings[i].texptr == texptr)
@@ -2732,34 +2779,35 @@ bool PickRandomTexture(const wchar_t* prefix, wchar_t* szRetTextureFilename)  //
     return true;
 }
 
-void CShaderParams::CacheParams(LPD3DXCONSTANTTABLE pCT, bool bHardErrors) 
+void CShaderParams::CacheParams(CConstantTable* pCT, bool bHardErrors)
 {
     Clear();
 
     if (!pCT)
         return;
 
-    D3DXCONSTANTTABLE_DESC d;
-    pCT->GetDesc(&d);
+    //D3DXCONSTANTTABLE_DESC d;
+    //pCT->GetDesc(&d);
 
-    D3DXCONSTANT_DESC cd;
+    //D3DXCONSTANT_DESC cd;
 
     #define MAX_RAND_TEX 16
     GString RandTexName[MAX_RAND_TEX];
 
     // pass 1: find all the samplers (and texture bindings).
-    for (UINT i=0; i<d.Constants; i++) 
+    for (UINT i = 0; i<pCT->ShaderDesc.BoundResources; i++)
     {
-        D3DXHANDLE h = pCT->GetConstant(NULL, i);
+        ShaderBinding* binding = pCT->GetBindingByIndex(i);
+        D3D11_SHADER_INPUT_BIND_DESC cd = binding->Description;
+        LPCSTR h = cd.Name;
         unsigned int count = 1;
-        pCT->GetConstantDesc(h, &cd, &count);
 
         // cd.Name          = VS_Sampler
         // cd.RegisterSet   = D3DXRS_SAMPLER
         // cd.RegisterIndex = 3
-        if (cd.RegisterSet == D3DXRS_SAMPLER && cd.RegisterIndex >= 0 && cd.RegisterIndex < sizeof(m_texture_bindings)/sizeof(m_texture_bindings[0])) 
+        if (cd.Type == D3D_SIT_SAMPLER && cd.BindPoint >= 0 && cd.BindPoint < sizeof(m_texture_bindings) / sizeof(m_texture_bindings[0]))
         {
-            assert(m_texture_bindings[cd.RegisterIndex].texptr == NULL);
+            assert(m_texture_bindings[cd.BindPoint].texptr == NULL);
 
             // remove "sampler_" prefix to create root file name.  could still have "FW_" prefix or something like that.
             wchar_t szRootName[MAX_PATH];
@@ -2803,45 +2851,47 @@ void CShaderParams::CacheParams(LPD3DXCONSTANTTABLE pCT, bool bHardErrors)
                 }
                 szRootName[i] = 0;
             }
-            m_texture_bindings[ cd.RegisterIndex ].bWrap     = bWrap;
-            m_texture_bindings[ cd.RegisterIndex ].bBilinear = bBilinear;
+            std::string strName(h);
+            m_texture_bindings[ cd.BindPoint ].bWrap = bWrap;
+            m_texture_bindings[ cd.BindPoint ].bBilinear = bBilinear;
+            m_texture_bindings[ cd.BindPoint ].bindPoint = pCT->GetTextureSlot(strName);
 
             // if <szFileName> is "main", map it to the VS...
             if (!wcscmp(L"main", szRootName))
             {
-                m_texture_bindings[ cd.RegisterIndex ].texptr    = NULL;
-                m_texcode[ cd.RegisterIndex ] = TEX_VS;
+                m_texture_bindings[ cd.BindPoint ].texptr    = NULL;
+                m_texcode[ cd.BindPoint ] = TEX_VS;
             }
             #if (NUM_BLUR_TEX >= 2)
             else if (!wcscmp(L"blur1", szRootName))
             {
-                m_texture_bindings[ cd.RegisterIndex ].texptr = g_plugin.m_lpBlur[1];
-                m_texcode         [ cd.RegisterIndex ]        = TEX_BLUR1;
+                m_texture_bindings[ cd.BindPoint ].texptr = g_plugin.m_lpBlur[1];
+                m_texcode         [ cd.BindPoint ]        = TEX_BLUR1;
                 if (!bWrapFilterSpecified) { // when sampling blur textures, default is CLAMP
-                    m_texture_bindings[ cd.RegisterIndex ].bWrap = false;
-                    m_texture_bindings[ cd.RegisterIndex ].bBilinear = true;
+                    m_texture_bindings[ cd.BindPoint ].bWrap = false;
+                    m_texture_bindings[ cd.BindPoint ].bBilinear = true;
                 }
             }
             #endif
             #if (NUM_BLUR_TEX >= 4)
                 else if (!wcscmp(L"blur2", szRootName))
                 {
-                    m_texture_bindings[ cd.RegisterIndex ].texptr = g_plugin.m_lpBlur[3];
-                    m_texcode         [ cd.RegisterIndex ]        = TEX_BLUR2;
+                    m_texture_bindings[ cd.BindPoint ].texptr = g_plugin.m_lpBlur[3];
+                    m_texcode         [ cd.BindPoint ]        = TEX_BLUR2;
                     if (!bWrapFilterSpecified) { // when sampling blur textures, default is CLAMP
-                        m_texture_bindings[ cd.RegisterIndex ].bWrap = false;
-                        m_texture_bindings[ cd.RegisterIndex ].bBilinear = true;
+                        m_texture_bindings[ cd.BindPoint ].bWrap = false;
+                        m_texture_bindings[ cd.BindPoint ].bBilinear = true;
                     }
                 }
             #endif
             #if (NUM_BLUR_TEX >= 6)
                 else if (!wcscmp(L"blur3", szRootName))
                 {
-                    m_texture_bindings[ cd.RegisterIndex ].texptr    = g_plugin.m_lpBlur[5];
-                    m_texcode         [ cd.RegisterIndex ]        = TEX_BLUR3;
+                    m_texture_bindings[ cd.BindPoint ].texptr    = g_plugin.m_lpBlur[5];
+                    m_texcode         [ cd.BindPoint ]        = TEX_BLUR3;
                     if (!bWrapFilterSpecified) { // when sampling blur textures, default is CLAMP
-                        m_texture_bindings[ cd.RegisterIndex ].bWrap = false;
-                        m_texture_bindings[ cd.RegisterIndex ].bBilinear = true;
+                        m_texture_bindings[ cd.BindPoint ].bWrap = false;
+                        m_texture_bindings[ cd.BindPoint ].bBilinear = true;
                     }
                 }
             #endif
@@ -2880,7 +2930,7 @@ void CShaderParams::CacheParams(LPD3DXCONSTANTTABLE pCT, bool bHardErrors)
             #endif
             else 
             {
-                m_texcode[ cd.RegisterIndex ] = TEX_DISK;
+                m_texcode[ cd.BindPoint ] = TEX_DISK;
 
                 // check for request for random texture.
                 if (!wcsncmp(L"rand", szRootName, 4) && 
@@ -2929,14 +2979,14 @@ void CShaderParams::CacheParams(LPD3DXCONSTANTTABLE pCT, bool bHardErrors)
                     if (!wcscmp(g_plugin.m_textures[n].texname, szRootName))
                     {
                         // found a match - texture was already loaded
-                        m_texture_bindings[ cd.RegisterIndex ].texptr = g_plugin.m_textures[n].texptr;
+                        m_texture_bindings[ cd.BindPoint ].texptr = g_plugin.m_textures[n].texptr;
                         // also bump its age down to zero! (for cache mgmt)
                         g_plugin.m_textures[n].nAge = g_plugin.m_nPresetsLoadedTotal;
                         break;
                     }
                 }
                 // if still not found, load it up / make a new texture
-                if (!m_texture_bindings[ cd.RegisterIndex ].texptr)
+                if (!m_texture_bindings[ cd.BindPoint ].texptr)
                 {
                     TexInfo x;  
                     wcsncpy(x.texname, szRootName, 254);
@@ -2981,7 +3031,8 @@ void CShaderParams::CacheParams(LPD3DXCONSTANTTABLE pCT, bool bHardErrors)
                         // keep trying to load it - if it fails due to memory, evict something and try again.
                         while (1)
                         {
-                            HRESULT hr = D3DXCreateTextureFromFileExW(g_plugin.GetDevice(), 
+                            HRESULT hr = g_plugin.GetDevice()->CreateTextureFromFile(szFilename, &x.texptr);
+                            /*HRESULT hr = D3DXCreateTextureFromFileExW(g_plugin.GetDevice(), 
                                                                    szFilename,
                                                                    D3DX_DEFAULT_NONPOW2, // w
                                                                    D3DX_DEFAULT_NONPOW2, // h
@@ -2995,7 +3046,7 @@ void CShaderParams::CacheParams(LPD3DXCONSTANTTABLE pCT, bool bHardErrors)
                                                                    &desc,
                                                                    NULL,             //palette
                                                                    (IDirect3DTexture9**)&x.texptr 
-                                                                     );
+                                                                     );*/
                             if (hr==D3DERR_OUTOFVIDEOMEMORY || hr==E_OUTOFMEMORY)
                             {
                                 // out of memory - try evicting something old and/or big
@@ -3005,14 +3056,33 @@ void CShaderParams::CacheParams(LPD3DXCONSTANTTABLE pCT, bool bHardErrors)
 
                             if (hr==D3D_OK)
                             {
-                                x.w = desc.Width;
-                                x.h = desc.Height;
-                                x.d = desc.Depth;
-                                x.bEvictable    = true;
-                                x.nAge          = g_plugin.m_nPresetsLoadedTotal;
-                                int nPixels = desc.Width*desc.Height*max(1,desc.Depth);
-                                int BitsPerPixel = GetDX9TexFormatBitsPerPixel(desc.Format);
-                                x.nSizeInBytes  =  nPixels*BitsPerPixel/8 + 16384;  //plus some overhead
+                              D3D11_RESOURCE_DIMENSION type;
+                              x.texptr->GetType(&type);
+                              if (type == D3D11_RESOURCE_DIMENSION_TEXTURE2D)
+                              {
+                                D3D11_TEXTURE2D_DESC texDesc;
+                                reinterpret_cast<ID3D11Texture2D*>(x.texptr)->GetDesc(&texDesc);
+                                x.w = texDesc.Width;
+                                x.h = texDesc.Height;
+                                x.d = 1;
+                                int nPixels = texDesc.Width*texDesc.Height;
+                                int BitsPerPixel = GetDX11TexFormatBitsPerPixel(texDesc.Format);
+                                x.nSizeInBytes = nPixels*BitsPerPixel / 8 + 16384;  //plus some overhead
+                              }
+                              if (type == D3D11_RESOURCE_DIMENSION_TEXTURE3D)
+                              {
+                                D3D11_TEXTURE3D_DESC texDesc;
+                                reinterpret_cast<ID3D11Texture3D*>(x.texptr)->GetDesc(&texDesc);
+
+                                x.w = texDesc.Width;
+                                x.h = texDesc.Height;
+                                x.d = texDesc.Depth;
+                                x.bEvictable = true;
+                                x.nAge = g_plugin.m_nPresetsLoadedTotal;
+                                int nPixels = texDesc.Width*texDesc.Height*max(1, texDesc.Depth);
+                                int BitsPerPixel = GetDX11TexFormatBitsPerPixel(texDesc.Format);
+                                x.nSizeInBytes = nPixels*BitsPerPixel / 8 + 16384;  //plus some overhead
+                              }
                             }
                             break;
                         }
@@ -3033,22 +3103,28 @@ void CShaderParams::CacheParams(LPD3DXCONSTANTTABLE pCT, bool bHardErrors)
                     }
 
                     g_plugin.m_textures.push_back(x);
-                    m_texture_bindings[ cd.RegisterIndex ].texptr    = x.texptr;
+                    m_texture_bindings[ cd.BindPoint ].texptr    = x.texptr;
                 }
             }
         }
     }
 
     // pass 2: bind all the float4's.  "texsize_XYZ" params will be filled out via knowledge of loaded texture sizes.
-    for (int i=0; i<d.Constants; i++) 
+    for (int i = 0; i<pCT->GetVariablesCount(); i++)
     {
-        D3DXHANDLE h = pCT->GetConstant(NULL, i);
+        ShaderVariable* var = pCT->GetVariableByIndex(i);
+        LPCSTR h = var->Description.Name;
         unsigned int count = 1;
-        pCT->GetConstantDesc(h, &cd, &count);
+        D3D11_SHADER_VARIABLE_DESC cd = var->Description;
+        D3D11_SHADER_TYPE_DESC ct = var->Type;
+        // dx11 don't process not used vars
+        if (cd.uFlags == 0)
+          continue;
+        //pCT->GetConstantDesc(h, &cd, &count);
 
-        if (cd.RegisterSet == D3DXRS_FLOAT4)
+        if (ct.Type == D3D_SVT_FLOAT)
         {
-            if (cd.Class == D3DXPC_MATRIX_COLUMNS) 
+            if (ct.Class == D3D_SVC_MATRIX_COLUMNS) 
             {
                 if      (!strcmp(cd.Name, "rot_s1" )) rot_mat[0]  = h;
                 else if (!strcmp(cd.Name, "rot_s2" )) rot_mat[1]  = h;
@@ -3075,7 +3151,7 @@ void CShaderParams::CacheParams(LPD3DXCONSTANTTABLE pCT, bool bHardErrors)
                 else if (!strcmp(cd.Name, "rot_rand3")) rot_mat[22] = h;
                 else if (!strcmp(cd.Name, "rot_rand4")) rot_mat[23] = h;
             }
-            else if (cd.Class == D3DXPC_VECTOR)
+            else if (ct.Class == D3D_SVC_VECTOR)
             {
                 if      (!strcmp(cd.Name, "rand_frame"))  rand_frame  = h;
                 else if (!strcmp(cd.Name, "rand_preset")) rand_preset = h;
@@ -3162,7 +3238,7 @@ bool CPlugin::RecompileVShader(const char* szShadersText, VShaderInfo *si, int s
     ZeroMemory(si, sizeof(VShaderInfo));    
    
     // LOAD SHADER
-    if (!LoadShaderFromMemory( szShadersText, "VS", "vs_1_1", &si->CT, (void**)&si->ptr, shaderType, bHardErrors && (GetScreenMode()==WINDOWED)))
+    if (!LoadShaderFromMemory( szShadersText, "VS", "vs_4_0_level_9_1", &si->CT, (void**)&si->ptr, shaderType, bHardErrors && (GetScreenMode()==WINDOWED)))
         return false;
 
     // Track down texture & float4 param bindings for this shader.  
@@ -3182,7 +3258,7 @@ bool CPlugin::RecompilePShader(const char* szShadersText, PShaderInfo *si, int s
     // LOAD SHADER
     // note: ps_1_4 required for dependent texture lookups.
     //       ps_2_0 required for tex2Dbias.
-		char ver[16];
+		char ver[32];
 		lstrcpy(ver, "ps_0_0");
 		switch(PSVersion) {
 		case MD2_PS_NONE: 
@@ -3190,11 +3266,11 @@ bool CPlugin::RecompilePShader(const char* szShadersText, PShaderInfo *si, int s
 			//   we run all the old presets through (shader) emulation.
 			// This way, during a MilkDrop session, we are always calling either WarpedBlit() or WarpedBlit_NoPixelShaders(),
 			//   and blending always works.
-			lstrcpy(ver, "ps_2_0"); 
+			lstrcpy(ver, "ps_4_0_level_9_1"); 
 			break;  
-		case MD2_PS_2_0: lstrcpy(ver, "ps_2_0"); break;
-		case MD2_PS_2_X: lstrcpy(ver, "ps_2_a"); break; // we'll try ps_2_a first, LoadShaderFromMemory will try ps_2_b if compilation fails
-		case MD2_PS_3_0: lstrcpy(ver, "ps_3_0"); break;
+		case MD2_PS_2_0: lstrcpy(ver, "ps_4_0_level_9_1"); break;
+		case MD2_PS_2_X: lstrcpy(ver, "ps_4_0_level_9_3"); break; // we'll try ps_2_a first, LoadShaderFromMemory will try ps_2_b if compilation fails
+		case MD2_PS_3_0: lstrcpy(ver, "ps_4_0_level_9_3"); break;
 		case MD2_PS_4_0: lstrcpy(ver, "ps_4_0"); break;
 		default: assert(0); break;
 		}
@@ -3252,7 +3328,7 @@ bool CPlugin::LoadShaders(PShaderSet* sh, CState* pState, bool bTick)
 //----------------------------------------------------------------------
 
 bool CPlugin::LoadShaderFromMemory( const char* szOrigShaderText, char* szFn, char* szProfile, 
-                                    LPD3DXCONSTANTTABLE* ppConstTable, void** ppShader, int shaderType, bool bHardErrors )
+                                    CConstantTable** ppConstTable, void** ppShader, int shaderType, bool bHardErrors )
 {
     const char szWarpDefines[] = "#define rad _rad_ang.x\n"
                                  "#define ang _rad_ang.y\n"
@@ -3278,7 +3354,7 @@ bool CPlugin::LoadShaderFromMemory( const char* szOrigShaderText, char* szFn, ch
     default:           lstrcpy(szWhichShader, "(unknown)"); break;
     }
 
-    LPD3DXBUFFER pShaderByteCode;
+    ID3DBlob* pShaderByteCode;
     wchar_t title[64];
     
     *ppShader = NULL;
@@ -3422,7 +3498,26 @@ bool CPlugin::LoadShaderFromMemory( const char* szOrigShaderText, char* szFn, ch
 
 	bool failed=false;
     int len = lstrlen(szShaderText);
-    if (D3D_OK != D3DXCompileShader(
+    ID3DBlob *pCode, *pErrors;
+#if _DEBUG
+    int flags = D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY;
+#else
+    int flags = D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY;
+#endif
+    if (S_OK != D3DCompile(szShaderText, len, NULL, NULL, NULL, szFn, szProfile, flags, 0, &pShaderByteCode, &m_pShaderCompileErrors))
+    {
+      failed = true;
+    }
+
+    if (failed && !strcmp(szProfile, "ps_4_0_level_9_1"))
+    {
+      SafeRelease(m_pShaderCompileErrors);
+      if (D3D_OK == D3DCompile(szShaderText, len, NULL, NULL, NULL, szFn, "ps_4_0_level_9_3", flags, 0, &pShaderByteCode, &m_pShaderCompileErrors))
+      {
+        failed = false;
+      }
+    }
+   /* if (D3D_OK != D3DXCompileShader(
         szShaderText,
         len,
         NULL,//CONST D3DXMACRO* pDefines,
@@ -3446,7 +3541,7 @@ bool CPlugin::LoadShaderFromMemory( const char* szOrigShaderText, char* szFn, ch
 			{
 				failed=false;
 			}
-		}
+		}*/
 
 		if (failed)
 		{
@@ -3469,17 +3564,29 @@ bool CPlugin::LoadShaderFromMemory( const char* szOrigShaderText, char* szFn, ch
 			return false;
 		}
 
+    ID3D11ShaderReflection* pReflection = nullptr;
+    if (S_OK != D3DReflect(pShaderByteCode->GetBufferPointer(), pShaderByteCode->GetBufferSize(), IID_ID3D11ShaderReflection, reinterpret_cast<void**>(&pReflection)))
+    {
+      SafeRelease(m_pShaderCompileErrors);
+      SafeRelease(pShaderByteCode);
+      return false;
+    }
+
+    *ppConstTable = new CConstantTable(pReflection);
+
     HRESULT hr = 1;
     if (szProfile[0] == 'v') 
     {
-        hr = GetDevice()->CreateVertexShader((const unsigned long *)(pShaderByteCode->GetBufferPointer()), (IDirect3DVertexShader9**)ppShader);
+        hr = GetDevice()->CreateVertexShader(pShaderByteCode->GetBufferPointer(), pShaderByteCode->GetBufferSize(), 
+                                             reinterpret_cast<ID3D11VertexShader**>(ppShader), (*ppConstTable));
     }
     else if (szProfile[0] == 'p') 
     {
-        hr = GetDevice()->CreatePixelShader((const unsigned long *)(pShaderByteCode->GetBufferPointer()), (IDirect3DPixelShader9**)ppShader);
+        hr = GetDevice()->CreatePixelShader(pShaderByteCode->GetBufferPointer(), pShaderByteCode->GetBufferSize(), 
+                                            reinterpret_cast<ID3D11PixelShader**>(ppShader), (*ppConstTable));
     }
 
-    if (hr != D3D_OK)
+    if (hr != S_OK)
     {
 /*
 		wchar_t temp[512];

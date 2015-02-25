@@ -32,11 +32,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "shell_defines.h"
 #include <strsafe.h>
 
-DXContext::DXContext(LPDIRECT3DDEVICE9 device, wchar_t* szIniFile)
+DXContext::DXContext(ID3D11Device* device, ID3D11DeviceContext* context, wchar_t* szIniFile)
 {
 	m_szWindowCaption[0] = 0;
 	m_hwnd = NULL;
-	m_lpDevice = device;
+	m_lpDevice = new DX11Context(device, context);
 	m_hmod_d3d9 = NULL;
 	m_hmod_d3dx9 = NULL;
 	m_zFormat = D3DFMT_UNKNOWN;
@@ -67,6 +67,9 @@ DXContext::~DXContext()
 
 void DXContext::Internal_CleanUp()
 {
+  if (m_lpDevice)
+    delete m_lpDevice;
+
 	// clear active flag
 	m_ready=FALSE;
 /*
@@ -389,12 +392,12 @@ BOOL DXContext::Internal_Init(DXCONTEXT_PARAMS *pParams, BOOL bFirstInit)
 
 	// get device caps:
 	memset(&m_caps, 0, sizeof(m_caps));
-	m_lpDevice->GetDeviceCaps(&m_caps);
+	//m_lpDevice->GetDeviceCaps(&m_caps);
 	m_bpp = 32;
 
 	// set initial viewport
 //	SetViewport();
-
+  m_lpDevice->Initialize();
 	// return success
 	m_ready = TRUE;
 	// benski> a little hack to get the window size correct. it seems to work
