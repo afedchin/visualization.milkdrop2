@@ -1,3 +1,23 @@
+/*
+*      Copyright (C) 2005-2015 Team Kodi
+*      http://kodi.tv
+*
+*  This Program is free software; you can redistribute it and/or modify
+*  it under the terms of the GNU General Public License as published by
+*  the Free Software Foundation; either version 2, or (at your option)
+*  any later version.
+*
+*  This Program is distributed in the hope that it will be useful,
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+*  GNU General Public License for more details.
+*
+*  You should have received a copy of the GNU General Public License
+*  along with XBMC; see the file COPYING.  If not, see
+*  <http://www.gnu.org/licenses/>.
+*
+*/
+
 #include <windows.h>
 #include <io.h>
 #include <vector>
@@ -22,9 +42,13 @@ extern "C" ADDON_STATUS ADDON_Create(void* hdl, void* props)
 
 	swprintf(g_plugin.m_szPluginsDirPath, L"%hs\\", visprops->presets);
 
-	g_plugin.PluginPreInitialize(0,0);
-	g_plugin.PluginInitialize((LPDIRECT3DDEVICE9)visprops->device, visprops->x, visprops->y, visprops->width, visprops->height, visprops->pixelRatio);
-	IsInitialized = true;
+  if (FALSE == g_plugin.PluginPreInitialize(0, 0))
+    return ADDON_STATUS_UNKNOWN;
+
+  if (FALSE == g_plugin.PluginInitialize((ID3D11DeviceContext*)visprops->device, visprops->x, visprops->y, visprops->width, visprops->height, visprops->pixelRatio))
+    return ADDON_STATUS_UNKNOWN;
+
+  IsInitialized = true;
 	return ADDON_STATUS_NEED_SETTINGS;
 //  return ADDON_STATUS_NEED_SAVEDSETTINGS; // We need some settings to be saved later before we quit this plugin
 }
@@ -97,7 +121,9 @@ extern "C" bool OnAction(long action, const void *param)
 	}
 	else if (action == VIS_ACTION_PREV_PRESET)
 	{
-	}
+    g_plugin.PrevPreset(1.0f);
+    bHandled = true;
+  }
 	else if (action == VIS_ACTION_LOAD_PRESET && param)
 	{
 		g_plugin.m_nCurrentPreset = (*(int *)param) + g_plugin.m_nDirs;
@@ -111,7 +137,9 @@ extern "C" bool OnAction(long action, const void *param)
 	}
 	else if (action == VIS_ACTION_LOCK_PRESET)
 	{
-	}
+    g_plugin.m_bPresetLockedByUser = !g_plugin.m_bPresetLockedByUser;
+    bHandled = true;
+  }
 	else if (action == VIS_ACTION_RANDOM_PRESET)
 	{
 		g_plugin.LoadRandomPreset(1.0f);

@@ -15,6 +15,12 @@
     <Filter Include="ns-eel">
       <UniqueIdentifier>{f38e4b94-3898-431f-bf43-4b2e2f9bffa3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Framework Files\DX11Stuff">
+      <UniqueIdentifier>{79ca2c1b-70fc-4599-b3db-b3cc0171bbcb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Framework Files\DX11Stuff\Shaders">
+      <UniqueIdentifier>{6c8a81ce-bcf6-4c37-88b9-997ef11521c8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vis_milk2\plugin.h">
@@ -52,6 +58,30 @@
     </ClInclude>
     <ClInclude Include="vis_milk2\gstring.h">
       <Filter>Framework Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11\CommonStates.h">
+      <Filter>Framework Files\DX11Stuff</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11\DemandCreate.h">
+      <Filter>Framework Files\DX11Stuff</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11\DirectXHelpers.h">
+      <Filter>Framework Files\DX11Stuff</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11\DX11Context.h">
+      <Filter>Framework Files\DX11Stuff</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11\SharedResourcePool.h">
+      <Filter>Framework Files\DX11Stuff</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11\ConstantTable.h">
+      <Filter>Framework Files\DX11Stuff</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11\DDSTextureLoader.h">
+      <Filter>Framework Files\DX11Stuff</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11\WICTextureLoader.h">
+      <Filter>Framework Files\DX11Stuff</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -103,5 +133,37 @@
     <ClCompile Include="vis_milk2\milkdropfs.cpp">
       <Filter>My Plugin Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DX11\CommonStates.cpp">
+      <Filter>Framework Files\DX11Stuff</Filter>
+    </ClCompile>
+    <ClCompile Include="DX11\DX11Context.cpp">
+      <Filter>Framework Files\DX11Stuff</Filter>
+    </ClCompile>
+    <ClCompile Include="DX11\ConstantTable.cpp">
+      <Filter>Framework Files\DX11Stuff</Filter>
+    </ClCompile>
+    <ClCompile Include="DX11\DDSTextureLoader.cpp">
+      <Filter>Framework Files\DX11Stuff</Filter>
+    </ClCompile>
+    <ClCompile Include="DX11\WICTextureLoader.cpp">
+      <Filter>Framework Files\DX11Stuff</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="DX11\ColorPixelShader.hlsl">
+      <Filter>Framework Files\DX11Stuff\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="DX11\DefaultVertexShader.hlsl">
+      <Filter>Framework Files\DX11Stuff\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="DX11\DiffusePixelShader.hlsl">
+      <Filter>Framework Files\DX11Stuff\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="DX11\TexturePixelShader.hlsl">
+      <Filter>Framework Files\DX11Stuff\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="DX11\Texture2PixelShader.hlsl">
+      <Filter>Framework Files\DX11Stuff\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

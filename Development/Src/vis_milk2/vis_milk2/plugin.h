@@ -40,6 +40,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gstring.h"
 #include "../ns-eel2/ns-eel.h"
+#include "../DX11/ConstantTable.h"
 
 int warand();
 
@@ -164,7 +165,7 @@ td_supertext;
 typedef struct
 {
     wchar_t        texname[256];   // ~filename, but without path or extension!
-    LPDIRECT3DBASETEXTURE9 texptr;    
+    ID3D11Resource* texptr;    
     int                w,h,d;
     //D3DXHANDLE         texsize_param;
     bool               bEvictable;
@@ -175,15 +176,16 @@ typedef struct
 typedef struct
 {
     GString    texname;  // just for ref
-    D3DXHANDLE texsize_param;
+    LPCSTR     texsize_param;
     int        w,h;
 } TexSizeParamInfo;
 
 typedef struct
 {
-    LPDIRECT3DBASETEXTURE9 texptr;    
-    bool               bBilinear;
-    bool               bWrap;
+    ID3D11Resource* texptr;    
+    bool            bBilinear;
+    bool            bWrap;
+    UINT            bindPoint;
 } SamplerInfo;
 
 typedef struct
@@ -202,11 +204,11 @@ class CShaderParams
 {
 public:
     // float4 handles:
-    D3DXHANDLE rand_frame ;
-    D3DXHANDLE rand_preset;
-    D3DXHANDLE const_handles[24];
-    D3DXHANDLE q_const_handles[(NUM_Q_VAR+3)/4];
-    D3DXHANDLE rot_mat[24];
+    LPCSTR rand_frame ;
+    LPCSTR rand_preset;
+    LPCSTR const_handles[24];
+    LPCSTR q_const_handles[(NUM_Q_VAR + 3) / 4];
+    LPCSTR rot_mat[24];
             
     typedef Vector<TexSizeParamInfo> TexSizeParamInfoList;
     TexSizeParamInfoList texsize_params;
@@ -220,8 +222,8 @@ public:
     tex_code      m_texcode[16];  // if ==TEX_VS, forget the pointer - texture bound @ that stage is the double-buffered VS.
 
     void Clear();
-    void CacheParams(LPD3DXCONSTANTTABLE pCT, bool bHardErrors);
-    void OnTextureEvict(LPDIRECT3DBASETEXTURE9 texptr);
+    void CacheParams(CConstantTable* pCT, bool bHardErrors);
+    void OnTextureEvict(ID3D11Resource* texptr);
     CShaderParams();
     ~CShaderParams();
 };
@@ -229,9 +231,9 @@ public:
 class VShaderInfo
 {
 public:
-    IDirect3DVertexShader9* ptr;
-    LPD3DXCONSTANTTABLE     CT;
-    CShaderParams           params;
+    ID3D11VertexShader * ptr;
+    CConstantTable*      CT;
+    CShaderParams        params;
     VShaderInfo()  { ptr=NULL; CT=NULL; params.Clear(); }
     ~VShaderInfo() { Clear(); }
     void Clear();
@@ -240,8 +242,8 @@ public:
 class PShaderInfo
 {
 public:
-    IDirect3DPixelShader9*  ptr;
-    LPD3DXCONSTANTTABLE     CT;
+    ID3D11PixelShader*  ptr;
+    CConstantTable*     CT;
     CShaderParams           params;
     PShaderInfo()  { ptr=NULL; CT=NULL; params.Clear(); }
     ~PShaderInfo() { Clear(); }
@@ -366,7 +368,7 @@ public:
         DWORD                   m_dwShaderFlags;       // Shader compilation/linking flags
         //ID3DXFragmentLinker*    m_pFragmentLinker;     // Fragment linker interface
         //LPD3DXBUFFER            m_pCompiledFragments;  // Buffer containing compiled fragments
-        LPD3DXBUFFER            m_pShaderCompileErrors;
+        ID3DBlob*               m_pShaderCompileErrors;
         VShaderSet              m_fallbackShaders_vs;  // *these are the only vertex shaders used for the whole app.*
         PShaderSet              m_fallbackShaders_ps;  // these are just used when the preset's pixel shaders fail to compile.
         PShaderSet              m_shaders;     // includes shader pointers and constant tables for warp & comp shaders, for cur. preset
@@ -381,7 +383,7 @@ public:
         #define SHADER_BLUR  2
         #define SHADER_OTHER 3
         bool LoadShaderFromMemory( const char* szShaderText, char* szFn, char* szProfile, 
-                                   LPD3DXCONSTANTTABLE* ppConstTable, void** ppShader, int shaderType, bool bHardErrors );
+                                   CConstantTable** ppConstTable, void** ppShader, int shaderType, bool bHardErrors );
         bool RecompileVShader(const char* szShadersText, VShaderInfo *si, int shaderType, bool bHardErrors);
         bool RecompilePShader(const char* szShadersText, PShaderInfo *si, int shaderType, bool bHardErrors, int PSVersion);
         bool EvictSomeTexture();
@@ -393,7 +395,7 @@ public:
         IDirect3DVertexDeclaration9* m_pWfVertDecl;
         IDirect3DVertexDeclaration9* m_pMyVertDecl;
 
-        D3DXVECTOR4 m_rand_frame;  // 4 random floats (0..1); randomized once per frame; fed to pixel shaders.
+        XMFLOAT4 m_rand_frame;  // 4 random floats (0..1); randomized once per frame; fed to pixel shaders.
 
         // RUNTIME SETTINGS THAT WE'VE ADDED
         float       m_prev_time;
@@ -506,15 +508,15 @@ public:
         float		m_fRandStart[4];
 
         // DIRECTX 9:
-        IDirect3DTexture9 *m_lpVS[2];
+        ID3D11Texture2D *m_lpVS[2];
         #define NUM_BLUR_TEX 6
         #if (NUM_BLUR_TEX>0)
-	    IDirect3DTexture9 *m_lpBlur[NUM_BLUR_TEX]; // each is successively 1/2 size of prev.
+        ID3D11Texture2D   *m_lpBlur[NUM_BLUR_TEX]; // each is successively 1/2 size of prev.
         int               m_nBlurTexW[NUM_BLUR_TEX];
         int               m_nBlurTexH[NUM_BLUR_TEX];
         #endif
         int m_nHighestBlurTexUsedThisFrame;
-        IDirect3DTexture9 *m_lpDDSTitle;    // CAREFUL: MIGHT BE NULL (if not enough mem)!
+        ID3D11Texture2D   *m_lpDDSTitle;    // CAREFUL: MIGHT BE NULL (if not enough mem)!
         int               m_nTitleTexSizeX, m_nTitleTexSizeY;
         MYVERTEX          *m_verts;
         MYVERTEX          *m_verts_temp;
@@ -545,7 +547,7 @@ public:
 
         td_supertext m_supertext;	// **contains info about current Song Title or Custom Message.**
 
-        IDirect3DTexture9 *m_tracer_tex;
+        ID3D11Texture2D *m_tracer_tex;
 
         int         m_nFramesSinceResize;
 
@@ -625,7 +627,7 @@ public:
         
         bool        LoadShaders(PShaderSet* sh, CState* pState, bool bTick);
         void        UvToMathSpace(float u, float v, float* rad, float* ang);
-        void        ApplyShaderParams(CShaderParams* p, LPD3DXCONSTANTTABLE pCT, CState* pState);
+        void        ApplyShaderParams(CShaderParams* p, CConstantTable* pCT, CState* pState);
         void        RestoreShaderParams();
         bool        AddNoiseTex(const wchar_t* szTexName, int size, int zoom_factor);
         bool        AddNoiseVol(const wchar_t* szTexName, int size, int zoom_factor);

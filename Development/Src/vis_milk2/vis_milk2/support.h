@@ -31,18 +31,23 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define __NULLSOFT_DX9_EXAMPLE_PLUGIN_SUPPORT_H__ 1
 
 #include <d3dx9.h>
+#include "../DX11/DX11Context.h"
+#include <DirectXMath.h>
+#include <DirectXPackedVector.h>
 
-void MakeWorldMatrix( D3DXMATRIX* pOut, 
+using namespace DirectX;
+
+void MakeWorldMatrix( XMMATRIX* pOut, 
                       float xpos, float ypos, float zpos, 
                       float sx,   float sy,   float sz, 
                       float pitch, float yaw, float roll);
-void MakeProjectionMatrix( D3DXMATRIX* pOut,
+void MakeProjectionMatrix( XMMATRIX* pOut,
                            const float near_plane, // Distance to near clipping plane
                            const float far_plane,  // Distance to far clipping plane
                            const float fov_horiz,  // Horizontal field of view angle, in radians
                            const float fov_vert);   // Vertical field of view angle, in radians
 void PrepareFor3DDrawing(
-        IDirect3DDevice9 *pDevice, 
+        DX11Context *pDevice, 
         int viewport_width,
         int viewport_height,
         float fov_in_degrees, 
@@ -52,16 +57,17 @@ void PrepareFor3DDrawing(
         D3DXVECTOR3* pvLookat,
         D3DXVECTOR3* pvUp
     );
-void PrepareFor2DDrawing(IDirect3DDevice9 *pDevice);
+void PrepareFor2DDrawing(DX11Context *pDevice);
 
 // Define vertex formats you'll be using here:
 // note: layout must match the vertex declaration in plugin.cpp!
 typedef struct _MYVERTEX 
 {
     float x, y, z;     // screen position + Z-buffer depth    
-    DWORD Diffuse;     // diffuse color    
+    float r, g, b, a;     // diffuse color    
+    //DWORD Diffuse;     // diffuse color    
     float tu, tv;           // DYNAMIC
-     float tu_orig, tv_orig; // STATIC
+    float tu_orig, tv_orig; // STATIC
     float rad, ang;         // STATIC
 } MYVERTEX, *LPMYVERTEX; 
 
@@ -69,16 +75,18 @@ typedef struct _MYVERTEX
 typedef struct _WFVERTEX 
 {
     float x, y, z;
-    DWORD Diffuse;   // diffuse color. also acts as filler; aligns struct to 16 bytes (good for random access/indexed prims)
+    float r, g, b, a;   // diffuse color. also acts as filler; aligns struct to 16 bytes (good for random access/indexed prims)
+    //DWORD Diffuse;   // diffuse color. also acts as filler; aligns struct to 16 bytes (good for random access/indexed prims)
 } WFVERTEX, *LPWFVERTEX; 
 
 // note: layout must match the vertex declaration in plugin.cpp!
 typedef struct _SPRITEVERTEX 
 {
-    float x, y;      // screen position    
-    float z;         // Z-buffer depth    
-    DWORD Diffuse;   // diffuse color. also acts as filler; aligns struct to 16 bytes (good for random access/indexed prims)
-    float tu, tv;    // texture coordinates for texture #0
+    float x, y;       // screen position    
+    float z;          // Z-buffer depth    
+    float r, g, b, a; // diffuse color. also acts as filler; aligns struct to 16 bytes (good for random access/indexed prims)
+    //DWORD Diffuse;   // diffuse color. also acts as filler; aligns struct to 16 bytes (good for random access/indexed prims)
+    float tu, tv;     // texture coordinates for texture #0
 } SPRITEVERTEX, *LPSPRITEVERTEX; 
 
 // Also prepare vertex format descriptors for each 
@@ -105,5 +113,6 @@ float   GetWinampSongLen(HWND hWndWinamp);      // returns answer in seconds
 #endif
 
 int GetDX9TexFormatBitsPerPixel(D3DFORMAT fmt);
+int GetDX11TexFormatBitsPerPixel(DXGI_FORMAT fmt);
 
 #endif

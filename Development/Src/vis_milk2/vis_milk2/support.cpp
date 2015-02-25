@@ -30,21 +30,26 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "support.h"
 #include "utility.h"
 //#include "../Winamp/wa_ipc.h"
+#include <DirectXMath.h>
+#include <DirectXPackedVector.h>
 
 bool g_bDebugOutput = false;
 bool g_bDumpFileCleared = false;
 
+using namespace DirectX;
+using namespace DirectX::PackedVector;
+
 //---------------------------------------------------
 void PrepareFor3DDrawing(
-        IDirect3DDevice9 *pDevice, 
+        DX11Context *pDevice, 
         int viewport_width,
         int viewport_height,
         float fov_in_degrees, 
         float near_clip,
         float far_clip,
-        D3DXVECTOR3* pvEye,
-        D3DXVECTOR3* pvLookat,
-        D3DXVECTOR3* pvUp
+        XMVECTOR* pvEye,
+        XMVECTOR* pvLookat,
+        XMVECTOR* pvUp
     )
 {
     // This function sets up DirectX up for 3D rendering.
@@ -66,9 +71,14 @@ void PrepareFor3DDrawing(
     //    3. set the current vertex format (SetVertexShader)
     //    4. set up the world matrix (SetTransform(D3DTS_WORLD, &my_world_matrix))
 
-    
+  {
+    pDevice->SetDepth(true);
+    pDevice->SetRasterizerState(D3D11_CULL_NONE, D3D11_FILL_SOLID);
+    pDevice->SetBlendState(false);
+    pDevice->SetSamplerState(0, D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP);
+  }
     // set up render state to some nice defaults:
-    {
+    /*{
         // some defaults
         pDevice->SetRenderState( D3DRS_ZENABLE, TRUE );
         pDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
@@ -92,7 +102,7 @@ void PrepareFor3DDrawing(
         pDevice->SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
         pDevice->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
         pDevice->SetSamplerState(1, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
-    }    
+    }*/    
 
     // set up view & projection matrices (but not the world matrix!)
     {
@@ -112,12 +122,12 @@ void PrepareFor3DDrawing(
         if (far_clip < near_clip + 1.0f)
             far_clip = near_clip + 1.0f;
 
-        D3DXMATRIX proj;
+        XMMATRIX proj;
         MakeProjectionMatrix(&proj, near_clip, far_clip, fov_x, fov_y);
         pDevice->SetTransform(D3DTS_PROJECTION, &proj);
         
-        D3DXMATRIX view;
-        D3DXMatrixLookAtLH(&view, pvEye, pvLookat, pvUp);
+        XMMATRIX view = XMMatrixLookAtLH(*pvEye, *pvLookat, *pvUp);
+        //D3DXMatrixLookAtLH(&view, pvEye, pvLookat, pvUp);
         pDevice->SetTransform(D3DTS_VIEW, &view);
 
         // Optimization note: "You can minimize the number of required calculations 
@@ -129,7 +139,7 @@ void PrepareFor3DDrawing(
     }
 }
 
-void PrepareFor2DDrawing(IDirect3DDevice9 *pDevice)
+void PrepareFor2DDrawing(DX11Context *pDevice)
 {
     // New 2D drawing area will have x,y coords in the range <-1,-1> .. <1,1>
     //         +--------+ Y=-1
@@ -143,6 +153,17 @@ void PrepareFor2DDrawing(IDirect3DDevice9 *pDevice)
     //  2. SetTexture(), if you need it
     // before rendering primitives!
     // Also, be sure your sprites have a z coordinate of 0.
+
+  pDevice->SetDepth(true);
+  pDevice->SetRasterizerState(D3D11_CULL_NONE, D3D11_FILL_SOLID);
+  pDevice->SetTexture(0, NULL);
+  pDevice->SetTexture(1, NULL);
+  pDevice->SetSamplerState(0, D3D11_FILTER_MIN_MAG_MIP_POINT, D3D11_TEXTURE_ADDRESS_WRAP);
+  pDevice->SetSamplerState(1, D3D11_FILTER_MIN_MAG_MIP_POINT, D3D11_TEXTURE_ADDRESS_WRAP);
+  pDevice->SetBlendState(false);
+  pDevice->SetShader(1);
+
+  /*
     pDevice->SetRenderState( D3DRS_ZENABLE, TRUE );
     pDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
     pDevice->SetRenderState( D3DRS_ZFUNC,     D3DCMP_LESSEQUAL );
@@ -171,14 +192,11 @@ void PrepareFor2DDrawing(IDirect3DDevice9 *pDevice)
     pDevice->SetTextureStageState(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE );
 
     pDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
-    
+  */  
     // set up for 2D drawing:
     {
-        D3DXMATRIX Ortho2D;    
-        D3DXMATRIX Identity;
-        
-        D3DXMatrixOrthoLH(&Ortho2D, 2.0f, -2.0f, 0.0f, 1.0f);
-        D3DXMatrixIdentity(&Identity);
+        XMMATRIX Ortho2D = XMMatrixOrthographicLH(2.0f, -2.0f, 0.0f, 1.0f);
+        XMMATRIX Identity = XMMatrixIdentity();
 
         pDevice->SetTransform(D3DTS_PROJECTION, &Ortho2D);
         pDevice->SetTransform(D3DTS_WORLD, &Identity);
@@ -188,7 +206,7 @@ void PrepareFor2DDrawing(IDirect3DDevice9 *pDevice)
 
 //---------------------------------------------------
 
-void MakeWorldMatrix( D3DXMATRIX* pOut, 
+void MakeWorldMatrix( XMMATRIX* pOut, 
                       float xpos, float ypos, float zpos, 
                       float sx,   float sy,   float sz, 
                       float pitch, float yaw, float roll)
@@ -201,35 +219,39 @@ void MakeWorldMatrix( D3DXMATRIX* pOut,
      * angles, in radians.
      */
 
-    D3DXMATRIX MatTemp;
-    D3DXMatrixIdentity(pOut);
+    XMMATRIX MatTemp;
+    *pOut = XMMatrixIdentity();
 
     // 1. first, rotation
     if (pitch || yaw || roll) 
     {
-        D3DXMATRIX MatRot;
-        D3DXMatrixIdentity(&MatRot);
+        XMMATRIX MatRot = XMMatrixRotationRollPitchYaw(pitch, yaw, roll);
 
-        D3DXMatrixRotationX(&MatTemp, pitch);         // Pitch
-        D3DXMatrixMultiply(&MatRot, &MatRot, &MatTemp);
-        D3DXMatrixRotationY(&MatTemp, yaw);           // Yaw
-        D3DXMatrixMultiply(&MatRot, &MatRot, &MatTemp);
-        D3DXMatrixRotationZ(&MatTemp, roll);          // Roll
-        D3DXMatrixMultiply(&MatRot, &MatRot, &MatTemp);
+        //D3DXMatrixRotationX(&MatTemp, pitch);         // Pitch
+        //D3DXMatrixMultiply(&MatRot, &MatRot, &MatTemp);
+        //D3DXMatrixRotationY(&MatTemp, yaw);           // Yaw
+        //D3DXMatrixMultiply(&MatRot, &MatRot, &MatTemp);
+        //D3DXMatrixRotationZ(&MatTemp, roll);          // Roll
+        //D3DXMatrixMultiply(&MatRot, &MatRot, &MatTemp);
  
-        D3DXMatrixMultiply(pOut, pOut, &MatRot);
+        //D3DXMatrixMultiply(pOut, pOut, &MatRot);
+        *pOut = XMMatrixMultiply(*pOut, MatRot);
     }
 
     // 2. then, scaling
-    D3DXMatrixScaling(&MatTemp, sx, sy, sz);
-    D3DXMatrixMultiply(pOut, pOut, &MatTemp);
+    //D3DXMatrixScaling(&MatTemp, sx, sy, sz);
+    //D3DXMatrixMultiply(pOut, pOut, &MatTemp);
+    MatTemp = XMMatrixScaling(sx, sy, sz);
+    *pOut = XMMatrixMultiply(*pOut, MatTemp);
 
     // 3. last, translation to final world pos.
-    D3DXMatrixTranslation(&MatTemp, xpos, ypos, zpos);
-    D3DXMatrixMultiply(pOut, pOut, &MatTemp);
+    //D3DXMatrixTranslation(&MatTemp, xpos, ypos, zpos);
+    //D3DXMatrixMultiply(pOut, pOut, &MatTemp);
+    MatTemp = XMMatrixTranslation(xpos, ypos, zpos);
+    *pOut = XMMatrixMultiply(*pOut, MatTemp);
 }
 
-void MakeProjectionMatrix( D3DXMATRIX* pOut,
+void MakeProjectionMatrix( XMMATRIX* pOut,
                            const float near_plane, // Distance to near clipping plane
                            const float far_plane,  // Distance to far clipping plane
                            const float fov_horiz,  // Horizontal field of view angle, in radians
@@ -239,12 +261,15 @@ void MakeProjectionMatrix( D3DXMATRIX* pOut,
     float h = (float)1/tanf(fov_vert*0.5f);   // 1/tan(x) == cot(x)
     float Q = far_plane/(far_plane - near_plane);
  
-    ZeroMemory(pOut, sizeof(D3DXMATRIX));
-    pOut->_11 = w;
+    *pOut = XMMATRIX(    w, 0.0f,          0.0f, 0.0f,
+                      0.0f,    h,          0.0f, 0.0f,
+                      0.0f, 0.0f,             Q, 1.0f,
+                      0.0f, 0.0f, -Q*near_plane, 0.0f);
+    /*pOut->_11 = w;
     pOut->_22 = h;
     pOut->_33 = Q;
     pOut->_43 = -Q*near_plane;
-    pOut->_34 = 1;
+    pOut->_34 = 1;*/
 }
 
 int GetDX9TexFormatBitsPerPixel(D3DFORMAT fmt)
@@ -305,4 +330,131 @@ int GetDX9TexFormatBitsPerPixel(D3DFORMAT fmt)
     }
     
     return 32;
+}
+
+int GetDX11TexFormatBitsPerPixel(DXGI_FORMAT fmt)
+{
+  switch (fmt)
+  {
+  case DXGI_FORMAT_R32G32B32A32_TYPELESS:
+  case DXGI_FORMAT_R32G32B32A32_FLOAT:
+  case DXGI_FORMAT_R32G32B32A32_UINT:
+  case DXGI_FORMAT_R32G32B32A32_SINT:
+    return 128;
+
+  case DXGI_FORMAT_R32G32B32_TYPELESS:
+  case DXGI_FORMAT_R32G32B32_FLOAT:
+  case DXGI_FORMAT_R32G32B32_UINT:
+  case DXGI_FORMAT_R32G32B32_SINT:
+    return 96;
+
+  case DXGI_FORMAT_R16G16B16A16_TYPELESS:
+  case DXGI_FORMAT_R16G16B16A16_FLOAT:
+  case DXGI_FORMAT_R16G16B16A16_UNORM:
+  case DXGI_FORMAT_R16G16B16A16_UINT:
+  case DXGI_FORMAT_R16G16B16A16_SNORM:
+  case DXGI_FORMAT_R16G16B16A16_SINT:
+  case DXGI_FORMAT_R32G32_TYPELESS:
+  case DXGI_FORMAT_R32G32_FLOAT:
+  case DXGI_FORMAT_R32G32_UINT:
+  case DXGI_FORMAT_R32G32_SINT:
+  case DXGI_FORMAT_R32G8X24_TYPELESS:
+  case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
+  case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
+  case DXGI_FORMAT_X32_TYPELESS_G8X24_UINT:
+    return 64;
+
+  case DXGI_FORMAT_R10G10B10A2_TYPELESS:
+  case DXGI_FORMAT_R10G10B10A2_UNORM:
+  case DXGI_FORMAT_R10G10B10A2_UINT:
+  case DXGI_FORMAT_R11G11B10_FLOAT:
+  case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+  case DXGI_FORMAT_R8G8B8A8_UNORM:
+  case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+  case DXGI_FORMAT_R8G8B8A8_UINT:
+  case DXGI_FORMAT_R8G8B8A8_SNORM:
+  case DXGI_FORMAT_R8G8B8A8_SINT:
+  case DXGI_FORMAT_R16G16_TYPELESS:
+  case DXGI_FORMAT_R16G16_FLOAT:
+  case DXGI_FORMAT_R16G16_UNORM:
+  case DXGI_FORMAT_R16G16_UINT:
+  case DXGI_FORMAT_R16G16_SNORM:
+  case DXGI_FORMAT_R16G16_SINT:
+  case DXGI_FORMAT_R32_TYPELESS:
+  case DXGI_FORMAT_D32_FLOAT:
+  case DXGI_FORMAT_R32_FLOAT:
+  case DXGI_FORMAT_R32_UINT:
+  case DXGI_FORMAT_R32_SINT:
+  case DXGI_FORMAT_R24G8_TYPELESS:
+  case DXGI_FORMAT_D24_UNORM_S8_UINT:
+  case DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
+  case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
+  case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
+  case DXGI_FORMAT_R8G8_B8G8_UNORM:
+  case DXGI_FORMAT_G8R8_G8B8_UNORM:
+  case DXGI_FORMAT_B8G8R8A8_UNORM:
+  case DXGI_FORMAT_B8G8R8X8_UNORM:
+  case DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:
+  case DXGI_FORMAT_B8G8R8A8_TYPELESS:
+  case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+  case DXGI_FORMAT_B8G8R8X8_TYPELESS:
+  case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+    return 32;
+
+  case DXGI_FORMAT_R8G8_TYPELESS:
+  case DXGI_FORMAT_R8G8_UNORM:
+  case DXGI_FORMAT_R8G8_UINT:
+  case DXGI_FORMAT_R8G8_SNORM:
+  case DXGI_FORMAT_R8G8_SINT:
+  case DXGI_FORMAT_R16_TYPELESS:
+  case DXGI_FORMAT_R16_FLOAT:
+  case DXGI_FORMAT_D16_UNORM:
+  case DXGI_FORMAT_R16_UNORM:
+  case DXGI_FORMAT_R16_UINT:
+  case DXGI_FORMAT_R16_SNORM:
+  case DXGI_FORMAT_R16_SINT:
+  case DXGI_FORMAT_B5G6R5_UNORM:
+  case DXGI_FORMAT_B5G5R5A1_UNORM:
+  case DXGI_FORMAT_B4G4R4A4_UNORM:
+    return 16;
+
+  case DXGI_FORMAT_R8_TYPELESS:
+  case DXGI_FORMAT_R8_UNORM:
+  case DXGI_FORMAT_R8_UINT:
+  case DXGI_FORMAT_R8_SNORM:
+  case DXGI_FORMAT_R8_SINT:
+  case DXGI_FORMAT_A8_UNORM:
+    return 8;
+
+  case DXGI_FORMAT_R1_UNORM:
+    return 1;
+
+  case DXGI_FORMAT_BC1_TYPELESS:
+  case DXGI_FORMAT_BC1_UNORM:
+  case DXGI_FORMAT_BC1_UNORM_SRGB:
+  case DXGI_FORMAT_BC4_TYPELESS:
+  case DXGI_FORMAT_BC4_UNORM:
+  case DXGI_FORMAT_BC4_SNORM:
+    return 4;
+
+  case DXGI_FORMAT_BC2_TYPELESS:
+  case DXGI_FORMAT_BC2_UNORM:
+  case DXGI_FORMAT_BC2_UNORM_SRGB:
+  case DXGI_FORMAT_BC3_TYPELESS:
+  case DXGI_FORMAT_BC3_UNORM:
+  case DXGI_FORMAT_BC3_UNORM_SRGB:
+  case DXGI_FORMAT_BC5_TYPELESS:
+  case DXGI_FORMAT_BC5_UNORM:
+  case DXGI_FORMAT_BC5_SNORM:
+  case DXGI_FORMAT_BC6H_TYPELESS:
+  case DXGI_FORMAT_BC6H_UF16:
+  case DXGI_FORMAT_BC6H_SF16:
+  case DXGI_FORMAT_BC7_TYPELESS:
+  case DXGI_FORMAT_BC7_UNORM:
+  case DXGI_FORMAT_BC7_UNORM_SRGB:
+    return 8;
+
+  default:
+    return 0;
+  }
 }
