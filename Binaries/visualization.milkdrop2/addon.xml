@@ -1,12 +1,12 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <addon
   id="visualization.milkdrop2"
-  version="1.0.0"
+  version="2.0.0"
   name="MilkDrop 2"
   provider-name="Ryan Geiss, ported by MrC">
   <extension
     point="xbmc.player.musicviz"
-    library_windx="MilkDrop2_win32dx.vis"/>
+    library_windx="visualization.milkdrop2.dll"/>
   <extension point="xbmc.addon.metadata">
     <summary lang="af">MilkDrop laat jou sweef deur die klankgolwe wat jy hoor</summary>
     <summary lang="ar">يحلق بك MilkDrop فوق الموجات الصوتية اللتي تسمع</summary>
