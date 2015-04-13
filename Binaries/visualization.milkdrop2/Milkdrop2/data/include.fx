@@ -136,18 +136,12 @@ sampler2D sampler_pw_main = sampler_state { Texture = <PrevFrameImage>; };
 #define sampler_PW_main sampler_pw_main
 
 // built-in noise textures:
-texture   sampler_noise_lq_tex;
-texture   sampler_noise_lq_lite_tex;
-texture   sampler_noise_mq_tex;
-texture   sampler_noise_hq_tex;
-texture   sampler_noisevol_lq_tex;
-texture   sampler_noisevol_hq_tex;
-sampler2D sampler_noise_lq = sampler_state { Texture = <sampler_noise_lq_tex>; };
-sampler2D sampler_noise_lq_lite = sampler_state { Texture = <sampler_noise_lq_lite_tex>; };
-sampler2D sampler_noise_mq = sampler_state { Texture = <sampler_noise_mq_tex>; };
-sampler2D sampler_noise_hq = sampler_state { Texture = <sampler_noise_hq_tex>; };
-sampler3D sampler_noisevol_lq = sampler_state { Texture = <sampler_noisevol_lq_tex>; };
-sampler3D sampler_noisevol_hq = sampler_state { Texture = <sampler_noisevol_hq_tex>; };
+sampler2D sampler_noise_lq;
+sampler2D sampler_noise_lq_lite;
+sampler2D sampler_noise_mq;
+sampler2D sampler_noise_hq;
+sampler3D sampler_noisevol_lq;
+sampler3D sampler_noisevol_hq;
 float4 texsize_noise_lq;
 float4 texsize_noise_lq_lite;
 float4 texsize_noise_mq;
