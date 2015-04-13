@@ -510,6 +510,7 @@ Order of Function Calls
 #include <d3d11shader.h>
 
 #pragma comment(lib,"d3dcompiler.lib")
+#pragma comment(lib,"dxguid.lib")
 
 FILE* XBMC_WOpen( const wchar_t* WFilename, const wchar_t* WMode )
 {
