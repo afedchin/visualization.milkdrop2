@@ -53,14 +53,14 @@
     <IncludePath>$(WindowsSDK_IncludePath);$(DXSDK_DIR)\Include\;$(XBMC_DIR)\xbmc\;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\..\..\Binaries\visualization.milkdrop2\</OutDir>
     <IntDir>$(SolutionDir)\..\Intermediates\$(Configuration)\</IntDir>
-    <TargetName>Milkdrop2_win32dx</TargetName>
+    <TargetName>visualization.milkdrop2</TargetName>
     <LibraryPath>$(WindowsSDK_LibraryPath_x86);$(SolutionDir)\..\Libs\$(Configuration)\;$(DXSDK_DIR)\Lib\x86;$(LibraryPath)</LibraryPath>
-    <TargetExt>.vis</TargetExt>
+    <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>Milkdrop2_win32dx</TargetName>
-    <TargetExt>.vis</TargetExt>
+    <TargetName>visualization.milkdrop2</TargetName>
+    <TargetExt>.dll</TargetExt>
     <IncludePath>$(WindowsSDK_IncludePath);$(DXSDK_DIR)\Include\;$(XBMC_DIR)\xbmc\;$(IncludePath)</IncludePath>
     <LibraryPath>$(WindowsSDK_LibraryPath_x86);$(SolutionDir)\..\Libs\$(Configuration)\;$(DXSDK_DIR)\Lib\x86;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)\..\..\Binaries\visualization.milkdrop2</OutDir>
