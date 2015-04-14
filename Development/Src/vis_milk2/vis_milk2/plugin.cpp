@@ -3027,7 +3027,7 @@ void CShaderParams::CacheParams(CConstantTable* pCT, bool bHardErrors)
                             if (GetFileAttributesW(szFilename) == 0xFFFFFFFF)
                               continue;
                         }
-                        D3DXIMAGE_INFO desc;
+                        //D3DXIMAGE_INFO desc;
                         
                         // keep trying to load it - if it fails due to memory, evict something and try again.
                         while (1)

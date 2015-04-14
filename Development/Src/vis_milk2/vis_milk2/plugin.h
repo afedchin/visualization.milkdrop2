@@ -362,7 +362,7 @@ public:
         bool		 m_bTitleFontItalic;
         */
         HFONT       m_gdi_title_font_doublesize;
-        LPD3DXFONT  m_d3dx_title_font_doublesize;
+        IUnknown*   m_d3dx_title_font_doublesize;
 
         // PIXEL SHADERS
         DWORD                   m_dwShaderFlags;       // Shader compilation/linking flags

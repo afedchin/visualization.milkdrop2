@@ -99,7 +99,7 @@ protected:
     // FONTS & TEXT
     // ------------------------------------------------------------
 public:
-    LPD3DXFONT   GetFont(eFontIndex idx);       // returns a D3DX font handle for drawing text; see shell_defines.h for the definition of the 'eFontIndex' enum.
+    IUnknown*    GetFont(eFontIndex idx);       // returns a D3DX font handle for drawing text; see shell_defines.h for the definition of the 'eFontIndex' enum.
     int          GetFontHeight(eFontIndex idx); // returns the height of the font, in pixels; see shell_defines.h for the definition of the 'eFontIndex' enum.
 //    CTextManager m_text;
 protected:
@@ -168,9 +168,9 @@ public:
   ID3D11DeviceContext* m_context;
 
 	// FONTS
-	IDirect3DTexture9* m_lpDDSText;
-    LPD3DXFONT   m_d3dx_font[NUM_BASIC_FONTS + NUM_EXTRA_FONTS];
-    LPD3DXFONT   m_d3dx_desktop_font;
+    IUnknown*    m_lpDDSText;
+    IUnknown*    m_d3dx_font[NUM_BASIC_FONTS + NUM_EXTRA_FONTS];
+    IUnknown*    m_d3dx_desktop_font;
     HFONT        m_font[NUM_BASIC_FONTS + NUM_EXTRA_FONTS];
     HFONT        m_font_desktop;
     
@@ -268,7 +268,6 @@ private:
     void CleanUpFonts();
     void AllocateTextSurface();
     void ToggleDesktop();
-    void PrepareFor2DDrawing_B(IDirect3DDevice9 *pDevice, int w, int h);
     void RenderBuiltInTextMsgs();
     int  GetCanvasMarginX();     // returns the # of pixels that exist on the canvas, on each side, that the user will never see.  Mainly here for windowed mode, where sometimes, up to 15 pixels get cropped at edges of the screen.
     int  GetCanvasMarginY();     // returns the # of pixels that exist on the canvas, on each side, that the user will never see.  Mainly here for windowed mode, where sometimes, up to 15 pixels get cropped at edges of the screen.
