@@ -484,8 +484,8 @@ void CPlugin::RenderFrame(int bRedraw)
 		m_fNextPresetTime = GetTime() + m_fBlendTimeAuto + m_fTimeBetweenPresets + dt;
 	}
 
-	/*
-    if (m_bPresetLockedByUser || m_bPresetLockedByCode)
+	
+  if (m_bPresetLockedByUser || m_bPresetLockedByCode)
 	{
 		// if the user has the preset LOCKED, or if they're in the middle of 
 		// saving it, then keep extending the time at which the auto-switch will occur
@@ -493,7 +493,7 @@ void CPlugin::RenderFrame(int bRedraw)
 
 		m_fPresetStartTime += fDeltaT;
 		m_fNextPresetTime += fDeltaT;
-	}*/
+	}
 
 	// update fps
 	/*

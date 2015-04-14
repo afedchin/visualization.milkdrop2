@@ -117,7 +117,9 @@ extern "C" bool OnAction(long action, const void *param)
 	}
 	else if (action == VIS_ACTION_LOCK_PRESET)
 	{
-	}
+    g_plugin.m_bPresetLockedByUser = !g_plugin.m_bPresetLockedByUser;
+    bHandled = true;
+  }
 	else if (action == VIS_ACTION_RANDOM_PRESET)
 	{
 		g_plugin.LoadRandomPreset(1.0f);
