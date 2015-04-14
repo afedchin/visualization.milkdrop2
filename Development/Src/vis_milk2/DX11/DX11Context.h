@@ -26,7 +26,7 @@
 #include "ConstantTable.h"
 
 #define MAX_NUM_SHADERS    (4)
-#define MAX_VERTICES_COUNT (5120)
+#define MAX_VERTICES_COUNT (3072)
 
 class DX11Context
 {

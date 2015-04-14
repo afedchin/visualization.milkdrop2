@@ -93,7 +93,7 @@ void DX11Context::Initialize()
   m_pDevice->CreatePixelShader(ColorPixelShaderCode,    sizeof(ColorPixelShaderCode),    NULL, &m_pPShader[2]);
   m_pDevice->CreatePixelShader(Texture2PixelShaderCode, sizeof(Texture2PixelShaderCode), NULL, &m_pPShader[3]);
 
-  CD3D11_BUFFER_DESC bDesc(sizeof(SPRITEVERTEX) * MAX_VERTICES_COUNT,
+  CD3D11_BUFFER_DESC bDesc(sizeof(MYVERTEX) * MAX_VERTICES_COUNT,
                            D3D11_BIND_VERTEX_BUFFER, 
                            D3D11_USAGE_DYNAMIC, 
                            D3D11_CPU_ACCESS_WRITE );
@@ -533,7 +533,7 @@ void DX11Context::UpdateVBuffer(unsigned int iNumVerts, const void* pVData, unsi
   D3D11_MAPPED_SUBRESOURCE res;
   if (S_OK == m_pContext->Map(m_pVBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &res))
   {
-    memcpy(res.pData, pVData, iNumVerts * vertexStride);
+    memcpy(res.pData, pVData, min(iNumVerts, MAX_VERTICES_COUNT) * vertexStride);
     m_pContext->Unmap(m_pVBuffer, 0);
   }
 }
@@ -543,7 +543,7 @@ void DX11Context::UpdateIBuffer(unsigned int iNumIndices, const void* pIData)
   D3D11_MAPPED_SUBRESOURCE res;
   if (S_OK == m_pContext->Map(m_pIBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &res))
   {
-    memcpy(res.pData, pIData, iNumIndices * sizeof(WORD));
+    memcpy(res.pData, pIData, min(iNumIndices, MAX_VERTICES_COUNT / 6) * sizeof(uint16_t));
     m_pContext->Unmap(m_pIBuffer, 0);
   }
 }
