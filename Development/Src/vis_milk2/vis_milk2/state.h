@@ -36,7 +36,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gstring.h"
 #include "texmgr.h"
 
-#include <d3dx9math.h> // for D3DXVECTOR3
 #include <DirectXMath.h>
 
 //#include "evallib/eval.h"

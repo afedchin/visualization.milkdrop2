@@ -33,7 +33,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <windows.h>
 #include <crtdefs.h>
 #include <d3d9.h>
-#include <d3dx9.h>
 
 #define SafeRelease(x) { if (x) {x->Release(); x=NULL;} } 
 #define SafeDelete(x) { if (x) {delete x; x=NULL;} }

@@ -30,7 +30,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __NULLSOFT_DX9_EXAMPLE_PLUGIN_SUPPORT_H__
 #define __NULLSOFT_DX9_EXAMPLE_PLUGIN_SUPPORT_H__ 1
 
-#include <d3dx9.h>
 #include "../DX11/DX11Context.h"
 #include <DirectXMath.h>
 #include <DirectXPackedVector.h>
@@ -53,9 +52,9 @@ void PrepareFor3DDrawing(
         float fov_in_degrees, 
         float near_clip,
         float far_clip,
-        D3DXVECTOR3* pvEye,
-        D3DXVECTOR3* pvLookat,
-        D3DXVECTOR3* pvUp
+        XMVECTOR* pvEye,
+        XMVECTOR* pvLookat,
+        XMVECTOR* pvUp
     );
 void PrepareFor2DDrawing(DX11Context *pDevice);
 

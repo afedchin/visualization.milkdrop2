@@ -37,7 +37,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #define D3D_DEBUG_INFO  // declare this before including d3d9.h
 #endif
 #include <d3d9.h>
-#include <d3dx9.h>
 #include <d3d11.h>
 #include "../DX11/DX11Context.h"
 

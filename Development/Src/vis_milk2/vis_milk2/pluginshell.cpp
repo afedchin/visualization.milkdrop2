@@ -258,7 +258,7 @@ D3DFORMAT CPluginShell::GetBackBufZFormat()
 {
 	if (m_lpDX) return m_lpDX->GetZFormat(); else return D3DFMT_UNKNOWN;
 };
-LPD3DXFONT CPluginShell::GetFont(eFontIndex idx)
+IUnknown* CPluginShell::GetFont(eFontIndex idx)
 {
 	if (idx >= 0 && idx < NUM_BASIC_FONTS + NUM_EXTRA_FONTS) return m_d3dx_font[idx]; else return NULL;
 };
@@ -1256,65 +1256,6 @@ void CPluginShell::AnalyzeNewSound(unsigned char *pWaveL, unsigned char *pWaveR)
 				m_sound.long_avg[ch][i] = m_sound.long_avg[ch][i]*(long_mix) + m_sound.imm[ch][i]*(1-long_mix);
 			}
 		}
-	}
-}
-
-void CPluginShell::PrepareFor2DDrawing_B(IDirect3DDevice9 *pDevice, int w, int h)
-{
-	// New 2D drawing area will have x,y coords in the range <-1,-1> .. <1,1>
-	//         +--------+ Y=-1
-	//         |        |
-	//         | screen |             Z=0: front of scene
-	//         |        |             Z=1: back of scene
-	//         +--------+ Y=1
-	//       X=-1      X=1
-	// NOTE: After calling this, be sure to then call (at least):
-	//  1. SetVertexShader()
-	//  2. SetTexture(), if you need it
-	// before rendering primitives!
-	// Also, be sure your sprites have a z coordinate of 0.
-
-	pDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
-	pDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-	pDevice->SetRenderState(D3DRS_ZFUNC,     D3DCMP_LESSEQUAL);
-	pDevice->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD);
-	pDevice->SetRenderState(D3DRS_FILLMODE,  D3DFILL_SOLID);
-	pDevice->SetRenderState(D3DRS_FOGENABLE, FALSE);
-	pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-	pDevice->SetRenderState(D3DRS_CLIPPING, TRUE);
-	pDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
-	pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-	pDevice->SetRenderState(D3DRS_LOCALVIEWER, FALSE);
-	pDevice->SetRenderState(D3DRS_COLORVERTEX, TRUE);
-
-	pDevice->SetTexture(0, NULL);
-	pDevice->SetTexture(1, NULL);
-	pDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);//D3DTEXF_LINEAR);
-	pDevice->SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_POINT);//D3DTEXF_LINEAR);
-	pDevice->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
-	pDevice->SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
-	pDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
-	pDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-	pDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_CURRENT);
-	pDevice->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
-
-	pDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-	pDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
-	pDevice->SetTextureStageState(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
-
-	pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-
-	// set up for 2D drawing:
-	{
-		D3DXMATRIX Ortho2D;
-		D3DXMATRIX Identity;
-
-		D3DXMatrixOrthoLH(&Ortho2D, (float)w, (float)h, 0.0f, 1.0f);
-		D3DXMatrixIdentity(&Identity);
-
-		pDevice->SetTransform(D3DTS_PROJECTION, &Ortho2D);
-		pDevice->SetTransform(D3DTS_WORLD, &Identity);
-		pDevice->SetTransform(D3DTS_VIEW, &Identity);
 	}
 }
 

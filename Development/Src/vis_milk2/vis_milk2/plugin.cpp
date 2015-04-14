@@ -864,11 +864,11 @@ void CPlugin::MyPreInitialize()
     m_nMaxImages = 32;
     m_nMaxBytes  = 16000000;
 
-    #ifdef _DEBUG
-        m_dwShaderFlags = D3DXSHADER_DEBUG|(1<<16);
-    #else
-        m_dwShaderFlags = (1<<16);//D3DXSHADER_SKIPOPTIMIZATION|D3DXSHADER_NO_PRESHADER;          
-    #endif
+    //#ifdef _DEBUG
+    //    m_dwShaderFlags = D3DXSHADER_DEBUG|(1<<16);
+    //#else
+    //    m_dwShaderFlags = (1<<16);//D3DXSHADER_SKIPOPTIMIZATION|D3DXSHADER_NO_PRESHADER;          
+    //#endif
     //m_pFragmentLinker = NULL;     
     //m_pCompiledFragments = NULL;  
     m_pShaderCompileErrors = NULL;
@@ -3027,7 +3027,7 @@ void CShaderParams::CacheParams(CConstantTable* pCT, bool bHardErrors)
                             if (GetFileAttributesW(szFilename) == 0xFFFFFFFF)
                               continue;
                         }
-                        D3DXIMAGE_INFO desc;
+                        //D3DXIMAGE_INFO desc;
                         
                         // keep trying to load it - if it fails due to memory, evict something and try again.
                         while (1)
