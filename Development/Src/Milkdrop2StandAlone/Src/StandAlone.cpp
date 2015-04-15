@@ -24,48 +24,178 @@
 #include <crtdbg.h>
 
 #include <windows.h>
-#include <d3d9.h>
 #include "../../vis_milk2/vis_milk2/plugin.h"
 #include <math.h>
+#include <d3d11_1.h>
 
-IDirect3D9*	pD3D9 = NULL;
-IDirect3DDevice9* pD3DDevice = NULL;
 HWND gHWND = NULL;
+ID3D11Device*           pD3DDevice = nullptr;
+ID3D11DeviceContext*    pImmediateContext = nullptr;
+IDXGISwapChain*         pSwapChain = nullptr;
+ID3D11RenderTargetView* pRenderTargetView = nullptr;
+ID3D11DepthStencilView* pDepthStencilView = nullptr;
+D3D_FEATURE_LEVEL       featureLevel = D3D_FEATURE_LEVEL_11_0;
 
 CPlugin g_plugin;
 
-void CreateDevice( int iWidth, int iHeight )
+HRESULT CreateDevice(int iWidth, int iHeight)
 {
-	pD3D9 = Direct3DCreate9( D3D_SDK_VERSION );
-	D3DDISPLAYMODE mode;
-	pD3D9->GetAdapterDisplayMode( D3DADAPTER_DEFAULT, &mode );
+  HRESULT hr = S_OK;
 
-//  	iWidth = mode.Width;
-//  	iHeight = mode.Height;
-//  	bool bWindowed = TRUE;
+  UINT createDeviceFlags = 0;
+#ifdef _DEBUG
+  createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+  D3D_FEATURE_LEVEL featureLevels[] =
+  {
+    D3D_FEATURE_LEVEL_11_1,
+    D3D_FEATURE_LEVEL_11_0,
+    D3D_FEATURE_LEVEL_10_1,
+    D3D_FEATURE_LEVEL_10_0,
+    D3D_FEATURE_LEVEL_9_3,
+    D3D_FEATURE_LEVEL_9_2,
+    D3D_FEATURE_LEVEL_9_1,
+  };
 
-	D3DPRESENT_PARAMETERS PresentParameters;
-	memset( &PresentParameters, 0, sizeof( PresentParameters ) );
+  hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags, featureLevels, ARRAYSIZE(featureLevels),
+                         D3D11_SDK_VERSION, &pD3DDevice, &featureLevel, &pImmediateContext);
 
-	PresentParameters.BackBufferCount			=	1;
-	PresentParameters.BackBufferFormat			=	mode.Format;
-	PresentParameters.BackBufferWidth			=	iWidth;
-	PresentParameters.BackBufferHeight			=	iHeight;
-	PresentParameters.SwapEffect				=	D3DSWAPEFFECT_COPY;
-	PresentParameters.Flags						=	0;
-	PresentParameters.EnableAutoDepthStencil	=	TRUE;
-	PresentParameters.AutoDepthStencilFormat	=	D3DFMT_D24X8;
-	PresentParameters.Windowed					=	TRUE;
-	PresentParameters.PresentationInterval		=	D3DPRESENT_INTERVAL_ONE;
-	PresentParameters.MultiSampleType = D3DMULTISAMPLE_NONE;
-	PresentParameters.hDeviceWindow				=	( HWND )gHWND;
+  if (hr == E_INVALIDARG)
+  {
+    // DirectX 11.0 platforms will not recognize D3D_FEATURE_LEVEL_11_1 so we need to retry without it
+    hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags, &featureLevels[1], ARRAYSIZE(featureLevels) - 1,
+                           D3D11_SDK_VERSION, &pD3DDevice, &featureLevel, &pImmediateContext);
+  }
 
-	pD3D9->CreateDevice( D3DADAPTER_DEFAULT,
-						 D3DDEVTYPE_HAL,
-						 ( HWND )gHWND,
-						 D3DCREATE_HARDWARE_VERTEXPROCESSING,
-						 &PresentParameters,
-						 &pD3DDevice );
+  if (FAILED(hr))
+    return hr;
+
+  // Obtain DXGI factory from device (since we used nullptr for pAdapter above)
+  IDXGIFactory1* dxgiFactory = nullptr;
+  {
+    IDXGIDevice* dxgiDevice = nullptr;
+    hr = pD3DDevice->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&dxgiDevice));
+    if (SUCCEEDED(hr))
+    {
+      IDXGIAdapter* adapter = nullptr;
+      hr = dxgiDevice->GetAdapter(&adapter);
+      if (SUCCEEDED(hr))
+      {
+        hr = adapter->GetParent(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&dxgiFactory));
+        adapter->Release();
+      }
+      dxgiDevice->Release();
+    }
+  }
+
+  if (FAILED(hr))
+    return hr;
+
+  // Create swap chain
+  IDXGIFactory2* dxgiFactory2 = nullptr;
+  hr = dxgiFactory->QueryInterface(__uuidof(IDXGIFactory2), reinterpret_cast<void**>(&dxgiFactory2));
+  if (dxgiFactory2)
+  {
+    // DirectX 11.1 or later
+    DXGI_SWAP_CHAIN_DESC1 sd;
+    ZeroMemory(&sd, sizeof(sd));
+    sd.Width = iWidth;
+    sd.Height = iHeight;
+    sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    sd.SampleDesc.Count = 1;
+    sd.SampleDesc.Quality = 0;
+    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    sd.BufferCount = 2;
+    sd.SwapEffect = DXGI_SWAP_EFFECT_SEQUENTIAL;
+
+    IDXGISwapChain1* pSwapChain1 = nullptr;
+    hr = dxgiFactory2->CreateSwapChainForHwnd(pD3DDevice, gHWND, &sd, nullptr, nullptr, &pSwapChain1);
+    if (SUCCEEDED(hr))
+    {
+      hr = pSwapChain1->QueryInterface(__uuidof(IDXGISwapChain), reinterpret_cast<void**>(&pSwapChain));
+      pSwapChain1->Release();
+    }
+
+    dxgiFactory2->Release();
+  }
+  else
+  {
+    // DirectX 11.0 systems
+    DXGI_SWAP_CHAIN_DESC sd;
+    ZeroMemory(&sd, sizeof(sd));
+    sd.BufferCount = 2;
+    sd.BufferDesc.Width = iWidth;
+    sd.BufferDesc.Height = iHeight;
+    sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    sd.BufferDesc.RefreshRate.Numerator = 60;
+    sd.BufferDesc.RefreshRate.Denominator = 1;
+    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    sd.SwapEffect = DXGI_SWAP_EFFECT_SEQUENTIAL;
+    sd.OutputWindow = gHWND;
+    sd.SampleDesc.Count = 1;
+    sd.SampleDesc.Quality = 0;
+    sd.Windowed = TRUE;
+
+    hr = dxgiFactory->CreateSwapChain(pD3DDevice, &sd, &pSwapChain);
+  }
+
+  dxgiFactory->MakeWindowAssociation(gHWND, DXGI_MWA_NO_ALT_ENTER);
+  dxgiFactory->Release();
+
+  if (FAILED(hr))
+    return hr;
+
+  // Create a render target view
+  ID3D11Texture2D* pBackBuffer = nullptr;
+  hr = pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&pBackBuffer));
+  if (FAILED(hr))
+    return hr;
+
+  hr = pD3DDevice->CreateRenderTargetView(pBackBuffer, nullptr, &pRenderTargetView);
+  pBackBuffer->Release();
+  if (FAILED(hr))
+    return hr;
+
+  // Create depth stencil texture
+  D3D11_TEXTURE2D_DESC descDepth;
+  ZeroMemory(&descDepth, sizeof(descDepth));
+  descDepth.Width = iWidth;
+  descDepth.Height = iHeight;
+  descDepth.MipLevels = 1;
+  descDepth.ArraySize = 1;
+  descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+  descDepth.SampleDesc.Count = 1;
+  descDepth.SampleDesc.Quality = 0;
+  descDepth.Usage = D3D11_USAGE_DEFAULT;
+  descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+  descDepth.CPUAccessFlags = 0;
+  descDepth.MiscFlags = 0;
+
+  ID3D11Texture2D* pDepthStencil;
+  hr = pD3DDevice->CreateTexture2D(&descDepth, nullptr, &pDepthStencil);
+  if (FAILED(hr))
+    return hr;
+
+  // Create the depth stencil view
+  D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
+  ZeroMemory(&descDSV, sizeof(descDSV));
+  descDSV.Format = descDepth.Format;
+  descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+  descDSV.Texture2D.MipSlice = 0;
+  hr = pD3DDevice->CreateDepthStencilView(pDepthStencil, &descDSV, &pDepthStencilView);
+
+  pDepthStencil->Release();
+
+  if (FAILED(hr))
+    return hr;
+
+  pImmediateContext->OMSetRenderTargets(1, &pRenderTargetView, pDepthStencilView);
+
+  // Setup the viewport
+  CD3D11_VIEWPORT vp(0.0f, 0.0f, (float)iWidth, (float)iHeight);
+  pImmediateContext->RSSetViewports(1, &vp);
+
+  return hr;
 }
 
 LRESULT CALLBACK StaticWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
@@ -95,8 +225,8 @@ float sin1add = 0.05f;
 float sin2add = 0.08f;
 void RenderFrame()
 {
-
-	pD3DDevice->BeginScene();
+  float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+  pImmediateContext->ClearRenderTargetView(pRenderTargetView, color);
 
 	float waves[576*2];
 	static float sin1 = 0;
@@ -129,9 +259,7 @@ void RenderFrame()
 
 	g_plugin.PluginRender((unsigned char*) &waves[0], (unsigned char*)&waves[1] );
 
-	pD3DDevice->EndScene();
-
-	pD3DDevice->Present( NULL, NULL, 0, NULL );
+  pSwapChain->Present(1, 0);
 }
 
 void MainLoop()
@@ -206,18 +334,30 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine
 
 	ShowWindow( hWnd, SW_SHOW );
 
-	CreateDevice( nDefaultWidth, nDefaultHeight );
+	if (S_OK != CreateDevice( nDefaultWidth, nDefaultHeight ))
+    return -1;
 
-	g_plugin.PluginPreInitialize(0,0);
-	g_plugin.PluginInitialize( pD3DDevice, 0, 0, nDefaultWidth, nDefaultHeight, nDefaultHeight / (float)nDefaultWidth);
-	
+  BOOL bSuccess;
+  bSuccess = g_plugin.PluginPreInitialize(nullptr, nullptr);
+  if (!bSuccess)
+    return -1;
+	bSuccess = g_plugin.PluginInitialize( pImmediateContext, 0, 0, nDefaultWidth, nDefaultHeight, nDefaultHeight / (float)nDefaultWidth);
+  if (!bSuccess)
+    return -1;
+
 	MainLoop();
 
 	g_plugin.PluginQuit();
 
-	pD3DDevice->Release();
-	pD3D9->Release();
+  pImmediateContext->Flush();
+  pImmediateContext->ClearState();
 
+  pRenderTargetView->Release();
+  pDepthStencilView->Release();
+  pSwapChain->Release();
+  pImmediateContext->Release();
+  pD3DDevice->Release();
+	
 	return 0;
 }
 
