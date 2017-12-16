@@ -55,7 +55,6 @@ FILE* XBMC_WOpen( const wchar_t* WFilename, const wchar_t* WMode );
 typedef Vector<GStringA> VarNameList;
 typedef Vector<int    > IntList;
 
-
 FILE* fLastFilePtr = NULL;
 void GetFast_CLEAR() { fLastFilePtr = NULL; }
 bool _GetLineByName(FILE* f, const char* szVarName, char* szRet, int nMaxRetChars)
@@ -268,8 +267,8 @@ void CState::RegisterBuiltInVariables(int flags)
 {
     if (flags & RECOMPILE_PRESET_CODE)
     {
-	    NSEEL_VM_resetvars(m_pf_eel);
-        var_pf_zoom		= NSEEL_VM_regvar(m_pf_eel, "zoom");		// i/o
+	    NSEEL_VM_reset_context(m_pf_eel);
+      var_pf_zoom		= NSEEL_VM_regvar(m_pf_eel, "zoom");		// i/o
 	    var_pf_zoomexp  = NSEEL_VM_regvar(m_pf_eel, "zoomexp");	// i/o
 	    var_pf_rot		= NSEEL_VM_regvar(m_pf_eel, "rot");		// i/o
 	    var_pf_warp		= NSEEL_VM_regvar(m_pf_eel, "warp");		// i/o
@@ -356,7 +355,7 @@ void CState::RegisterBuiltInVariables(int flags)
 	    // this is the list of variables that can be used for a PER-VERTEX calculation:
 	    // ('vertex' meaning a vertex on the mesh) (as opposed to a once-per-frame calculation)
 
-        NSEEL_VM_resetvars(m_pv_eel);
+        //NSEEL_VM_resetvars(m_pv_eel);
 
         var_pv_zoom		= NSEEL_VM_regvar(m_pv_eel, "zoom");		// i/o
 	    var_pv_zoomexp  = NSEEL_VM_regvar(m_pv_eel, "zoomexp");	// i/o
@@ -400,7 +399,7 @@ void CState::RegisterBuiltInVariables(int flags)
     {
         for (int i=0; i<MAX_CUSTOM_WAVES; i++)
         {
-	        NSEEL_VM_resetvars(m_wave[i].m_pf_eel);
+	        NSEEL_VM_reset_context(m_wave[i].m_pf_eel);
 	        m_wave[i].var_pf_time		= NSEEL_VM_regvar(m_wave[i].m_pf_eel, "time");		// i
 	        m_wave[i].var_pf_fps 		= NSEEL_VM_regvar(m_wave[i].m_pf_eel, "fps");		// i
 	        m_wave[i].var_pf_frame      = NSEEL_VM_regvar(m_wave[i].m_pf_eel, "frame");     // i
@@ -430,7 +429,7 @@ void CState::RegisterBuiltInVariables(int flags)
 	        m_wave[i].var_pf_a          = NSEEL_VM_regvar(m_wave[i].m_pf_eel, "a");         // i/o
             m_wave[i].var_pf_samples    = NSEEL_VM_regvar(m_wave[i].m_pf_eel, "samples");   // i/o
 
-	        NSEEL_VM_resetvars(m_wave[i].m_pp_eel);
+	        NSEEL_VM_reset_context(m_wave[i].m_pp_eel);
 	        m_wave[i].var_pp_time		= NSEEL_VM_regvar(m_wave[i].m_pp_eel, "time");		// i
 	        m_wave[i].var_pp_fps 		= NSEEL_VM_regvar(m_wave[i].m_pp_eel, "fps");		// i
 	        m_wave[i].var_pp_frame      = NSEEL_VM_regvar(m_wave[i].m_pp_eel, "frame");     // i
@@ -469,7 +468,7 @@ void CState::RegisterBuiltInVariables(int flags)
     {
         for (int i=0; i<MAX_CUSTOM_SHAPES; i++)
         {
-	        NSEEL_VM_resetvars(m_shape[i].m_pf_eel);
+	        NSEEL_VM_reset_context(m_shape[i].m_pf_eel);
 	        m_shape[i].var_pf_time		= NSEEL_VM_regvar(m_shape[i].m_pf_eel, "time");		// i
 	        m_shape[i].var_pf_fps 		= NSEEL_VM_regvar(m_shape[i].m_pf_eel, "fps");		// i
 	        m_shape[i].var_pf_frame      = NSEEL_VM_regvar(m_shape[i].m_pf_eel, "frame");     // i
@@ -1679,7 +1678,7 @@ void CState::RecompileExpressions(int flags, int bReInit)
 	        {
 		        NSEEL_CODEHANDLE	pf_codehandle_init;	
 
-			    if ( ! (pf_codehandle_init = NSEEL_code_compile(m_pf_eel, buf)))
+			    if ( ! (pf_codehandle_init = NSEEL_code_compile(m_pf_eel, buf, 0)))
 			    {
 /*
                     wchar_t buf[1024];
@@ -1712,7 +1711,7 @@ void CState::RecompileExpressions(int flags, int bReInit)
             StripLinefeedCharsAndComments(m_szPerFrameExpr, buf);
 	        if (buf[0])
 	        {
-			    if ( ! (m_pf_codehandle = NSEEL_code_compile(m_pf_eel, buf)))
+			    if ( ! (m_pf_codehandle = NSEEL_code_compile(m_pf_eel, buf, 0)))
 			    {
 /*
                     wchar_t buf[1024];
@@ -1726,7 +1725,7 @@ void CState::RecompileExpressions(int flags, int bReInit)
 		    StripLinefeedCharsAndComments(m_szPerPixelExpr, buf);
 	        if (buf[0])
 	        {
-			    if ( ! (m_pp_codehandle = NSEEL_code_compile(m_pv_eel, buf)))
+			    if ( ! (m_pp_codehandle = NSEEL_code_compile(m_pv_eel, buf, 0)))
 			    {
 /*
                     wchar_t buf[1024];
@@ -1750,7 +1749,7 @@ void CState::RecompileExpressions(int flags, int bReInit)
 		            #ifndef _NO_EXPR_
 		            {
 		                NSEEL_CODEHANDLE	codehandle_temp;	
-			            if ( ! (codehandle_temp = NSEEL_code_compile(m_wave[i].m_pf_eel, buf)))
+			            if ( ! (codehandle_temp = NSEEL_code_compile(m_wave[i].m_pf_eel, buf, 0)))
 			            {
 /*
                             wchar_t buf[1024];
@@ -1789,7 +1788,7 @@ void CState::RecompileExpressions(int flags, int bReInit)
 	            if (buf[0])
                 {
 		            #ifndef _NO_EXPR_
-			            if ( ! (m_wave[i].m_pf_codehandle = NSEEL_code_compile(m_wave[i].m_pf_eel, buf)))
+			            if ( ! (m_wave[i].m_pf_codehandle = NSEEL_code_compile(m_wave[i].m_pf_eel, buf, 0)))
 			            {
 /*
                             wchar_t buf[1024];
@@ -1804,7 +1803,7 @@ void CState::RecompileExpressions(int flags, int bReInit)
 		        StripLinefeedCharsAndComments(m_wave[i].m_szPerPoint, buf);
 	            if (buf[0])
                 {
-			        if ( ! (m_wave[i].m_pp_codehandle = NSEEL_code_compile(m_wave[i].m_pp_eel, buf)))
+			        if ( ! (m_wave[i].m_pp_codehandle = NSEEL_code_compile(m_wave[i].m_pp_eel, buf, 0)))
 			        {
 /*
                         wchar_t buf[1024];
@@ -1827,7 +1826,7 @@ void CState::RecompileExpressions(int flags, int bReInit)
 		            #ifndef _NO_EXPR_
 		            {
 		                NSEEL_CODEHANDLE	codehandle_temp;	
-			            if ( ! (codehandle_temp = NSEEL_code_compile(m_shape[i].m_pf_eel, buf)))
+			            if ( ! (codehandle_temp = NSEEL_code_compile(m_shape[i].m_pf_eel, buf, 0)))
 			            {
 /*
                             wchar_t buf[1024];
@@ -1866,7 +1865,7 @@ void CState::RecompileExpressions(int flags, int bReInit)
 	            if (buf[0])
                 {
 		            #ifndef _NO_EXPR_
-			            if ( ! (m_shape[i].m_pf_codehandle = NSEEL_code_compile(m_shape[i].m_pf_eel, buf)))
+			            if ( ! (m_shape[i].m_pf_codehandle = NSEEL_code_compile(m_shape[i].m_pf_eel, buf, 0)))
 			            {
 /*
                             wchar_t buf[1024];

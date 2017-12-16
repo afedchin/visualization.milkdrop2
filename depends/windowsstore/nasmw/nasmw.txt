@@ -1,0 +1,1 @@
+nasmw http://www.nasm.us/pub/nasm/releasebuilds/2.12.02/win32/nasm-2.12.02-win32.zip

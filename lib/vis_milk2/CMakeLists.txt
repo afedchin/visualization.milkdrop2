@@ -2,10 +2,9 @@ project(vis_milk2)
 
 enable_language(C)
 enable_language(CXX)
+enable_language(ASM_NASM)
 
 cmake_minimum_required(VERSION 2.6)
-
-remove_definitions(-DNOMINMAX)
 
 set( SHADER_FILES dx11/DefaultVertexShader.hlsl
                   dx11/DiffusePixelShader.hlsl
@@ -39,6 +38,20 @@ set(SOURCES dx11/CommonStates.cpp
             dx11/DDSTextureLoader.cpp
             dx11/WICTextureLoader.cpp
             dx11/DX11Context.cpp
+            ns-eel2/eel_atomic.h
+            ns-eel2/eel_eval.h
+            ns-eel2/eel_fft.h
+            ns-eel2/eel_files.h
+            ns-eel2/eel_lice.h
+            ns-eel2/eel_mdct.h
+            ns-eel2/eel_misc.h
+            ns-eel2/eel_net.h
+            ns-eel2/eel_strings.h
+            ns-eel2/eelscript.h
+            ns-eel2/ns-eel-addfuncs.h
+            ns-eel2/ns-eel-func-ref.h
+            ns-eel2/ns-eel-int.h
+            ns-eel2/ns-eel.h
             ns-eel2/nseel-caltab.c
             ns-eel2/nseel-cfunc.c
             ns-eel2/nseel-compiler.c
@@ -46,6 +59,8 @@ set(SOURCES dx11/CommonStates.cpp
             ns-eel2/nseel-lextab.c
             ns-eel2/nseel-ram.c
             ns-eel2/nseel-yylex.c
+            ns-eel2/wdlcstring.h
+            ns-eel2/wdlstring.h
             vis_milk2/dxcontext.cpp
             vis_milk2/fft.cpp
             vis_milk2/milkdropfs.cpp
@@ -56,9 +71,21 @@ set(SOURCES dx11/CommonStates.cpp
             vis_milk2/texmgr.cpp
             vis_milk2/utility.cpp)
 
-if(CORE_SYSTEM_NAME STREQUAL windowsstore)
-  add_definitions(-D_WIN32_WINNT=0x0A00 -D_WINDOWS -D_CRT_NON_CONFORMING_SWPRINTFS)
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  set(SOURCES ${SOURCES} 
+    ns-eel2/asm-nseel-x64.asm
+    ns-eel2/glue_x86_64.h
+  )
 else()
-  add_definitions(-D_WIN32_WINNT=0x0600 -D_WINDOWS)
+  set(SOURCES ${SOURCES} 
+    ns-eel2/asm-nseel-x86-msvc.c
+    ns-eel2/glue_x86.h
+  )
+endif()
+
+if(CORE_SYSTEM_NAME STREQUAL windowsstore)
+  add_definitions(-D_WIN32_WINNT=0x0A00 -D_WINDOWS -D_CRT_NON_CONFORMING_SWPRINTFS -DNOMINMAX -D_WDL_CSTRING_IMPL_ONLY_)
+else()
+  add_definitions(-D_WIN32_WINNT=0x0600 -D_WINDOWS -DNOMINMAX -D_WDL_CSTRING_IMPL_ONLY_)
 endif()
 add_library(vis_milk2 STATIC ${SOURCES} ${SHADER_INCLUDES})

@@ -1,6 +1,6 @@
 /*
   Expression Evaluator Library (NS-EEL) v2
-  Copyright (C) 2004-2008 Cockos Incorporated
+  Copyright (C) 2004-2013 Cockos Incorporated
   Copyright (C) 1999-2003 Nullsoft, Inc.
   
   nseel-cfunc.c: assembly/C implementation of operator/function templates
@@ -98,9 +98,9 @@ static unsigned int genrand_int32(void)
 
 
 //---------------------------------------------------------------------------------------------------------------
-EEL_F NSEEL_CGEN_CALL nseel_int_rand(EEL_F *f)
+EEL_F NSEEL_CGEN_CALL nseel_int_rand(EEL_F f)
 {
-  EEL_F x=floor(*f);
+  EEL_F x=floor(f);
   if (x < 1.0) x=1.0;
  
 #ifdef NSEEL_EEL1_COMPAT_MODE 
@@ -108,24 +108,85 @@ EEL_F NSEEL_CGEN_CALL nseel_int_rand(EEL_F *f)
 #else
   return (EEL_F) (genrand_int32()*(1.0/(double)0xFFFFFFFF)*x);
 #endif
-//  return (EEL_F)(rand()%EEL_F2int(x));
 }
 
 //---------------------------------------------------------------------------------------------------------------
 
 
+#ifndef EEL_TARGET_PORTABLE
 
 #ifdef __ppc__
 #include "asm-nseel-ppc-gcc.c"
+#elif defined(__arm__)
+#include "asm-nseel-arm-gcc.c"
+#elif defined (_M_ARM) && _M_ARM  == 7
+  // vc on ARM, tbd
 #else
   #ifdef _MSC_VER
     #ifdef _WIN64
       //nasm
     #else
       #include "asm-nseel-x86-msvc.c"
+
+      void eel_setfp_round() 
+      { 
+        short oldsw;
+        __asm
+        {
+          fnstcw [oldsw]
+          mov ax, [oldsw]
+          and ax, 0xF3FF // round to nearest
+          mov [oldsw], ax
+          fldcw [oldsw]
+        }
+      }
+      void eel_setfp_trunc() 
+      { 
+        short oldsw;
+        __asm
+        {
+          fnstcw [oldsw]
+          mov ax, [oldsw]
+          or ax, 0xC00 // truncate
+          mov [oldsw], ax
+          fldcw [oldsw]
+        }
+      }
     #endif
   #elif !defined(__LP64__)
-  #include "asm-nseel-x86-gcc.c"
+    #define FUNCTION_MARKER "\n.byte 0x89,0x90,0x90,0x90,0x90,0x90,0x90,0x90,0x90,0x90,0x90,0x90\n"
+    #include "asm-nseel-x86-gcc.c"
+    void eel_setfp_round()
+    {
+	__asm__(
+		"subl $16, %esp\n"
+		"fnstcw (%esp)\n"
+		"mov (%esp), %ax\n"
+		"and $0xF3FF, %ax\n" // set round to nearest
+		"mov %ax, 4(%esp)\n"
+		"fldcw 4(%esp)\n"
+		"addl $16, %esp\n"
+	);
+    }
+    void eel_setfp_trunc()
+    {
+	__asm__(
+		"subl $16, %esp\n"
+		"fnstcw (%esp)\n"
+		"mov (%esp), %ax\n"
+		"or $0xC00, %ax\n" // set to truncate
+		"mov %ax, 4(%esp)\n"
+		"fldcw 4(%esp)\n"
+		"addl $16, %esp\n"
+	);
+   }
   #endif
 #endif
 
+#endif
+
+#if defined(__ppc__) || defined(__arm__) || defined(EEL_TARGET_PORTABLE)
+  // blank stubs for PPC, portable modes
+  void eel_setfp_round() { }
+  void eel_setfp_trunc() { }
+#endif

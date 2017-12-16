@@ -29,11 +29,27 @@ extern "C" {
 #endif
 
 struct _compileContext;
-typedef void (*NSEEL_PPPROC)(void *data, int data_size, struct _compileContext *userfunc_data);
 
-void NSEEL_PProc_RAM(void *data, int data_size, struct _compileContext *ctx);
-void NSEEL_PProc_THIS(void *data, int data_size, struct _compileContext *ctx);
+void *NSEEL_PProc_RAM(void *data, int data_size, struct _compileContext *ctx);
+void *NSEEL_PProc_THIS(void *data, int data_size, struct _compileContext *ctx);
 
+
+#ifdef EEL_TARGET_PORTABLE
+
+extern EEL_BC_TYPE _asm_generic3parm[]; // 3 double * parms, returning double *
+extern EEL_BC_TYPE _asm_generic3parm_retd[]; // 3 double * parms, returning double
+extern EEL_BC_TYPE _asm_generic2parm[]; // 2 double * parms, returning double *
+extern EEL_BC_TYPE _asm_generic2parm_retd[]; // 2 double * parms, returning double
+extern EEL_BC_TYPE _asm_generic1parm[]; // 1 double * parms, returning double *
+extern EEL_BC_TYPE _asm_generic1parm_retd[]; // 1 double * parms, returning double 
+
+extern const void *const _asm_generic1parm_retd_end;
+extern const void *const _asm_generic1parm_end;
+extern const void *const _asm_generic2parm_retd_end;
+extern const void *const _asm_generic2parm_end;
+extern const void *const _asm_generic3parm_retd_end;
+extern const void *const _asm_generic3parm_end;
+#else
 
 void _asm_generic3parm(void); // 3 double * parms, returning double *
 void _asm_generic3parm_end(void);
@@ -48,9 +64,7 @@ void _asm_generic1parm_end(void);
 void _asm_generic1parm_retd(void); // 1 double * parms, returning double 
 void _asm_generic1parm_retd_end(void);
 
-void _asm_megabuf(void);
-void _asm_megabuf_end(void);
-
+#endif
 
 
 #if EEL_F_SIZE == 4
@@ -59,12 +73,6 @@ void _asm_megabuf_end(void);
 #else
 #define EEL_F_SSTR "8"
 #define EEL_F_SUFFIX "l"
-#endif
-
-#ifdef _MSC_VER
-#define NSEEL_CGEN_CALL __cdecl
-#else
-#define NSEEL_CGEN_CALL 
 #endif
 
 #ifdef __cplusplus

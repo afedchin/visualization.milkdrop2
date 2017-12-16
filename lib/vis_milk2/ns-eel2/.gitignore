@@ -1,0 +1,7 @@
+*.o
+*.obj
+loose_eel.exe
+
+asm-nseel-x64-macho.o
+asm-nseel-x64.obj
+build/
