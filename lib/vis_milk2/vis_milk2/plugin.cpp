@@ -1083,6 +1083,11 @@ void CPlugin::MyReadConfig()
 
 	GetPrivateProfileStringW(L"settings",L"szPresetDir",m_szPresetDir,m_szPresetDir,sizeof(m_szPresetDir),pIni);
 #endif
+  m_nTexSizeY = m_nTexSizeX;
+  m_bTexSizeWasAutoPow2 = (m_nTexSizeX == -2);
+  m_bTexSizeWasAutoExact = (m_nTexSizeX == -1);
+  m_nGridY = m_nGridX * 3 / 4;
+
 	// bounds-checking:
 	if (m_nGridX > MAX_GRID_X)
 		m_nGridX = MAX_GRID_X;
