@@ -103,19 +103,19 @@ public:
     // feel like copying all data twice.  BE WARNED!  When this class reallocates
     // memory, all old references to _data are invalid!
     //operator const char*() const { return _data; }
-    inline int GetSize() const  //in bytes - including terminating NULL char.
+    inline size_t GetSize() const  //in bytes - including terminating NULL char.
     {
         return m_size;
     }
 
-    inline int GetLength() const  
+    inline size_t GetLength() const  
     {
         return (m_size >= 1) ? m_size-1 : 0;
     }
 
 private:
     wchar_t* m_data;
-    int   m_size;
+    size_t   m_size;
 };
 
 class GStringA
@@ -211,19 +211,19 @@ public:
     // feel like copying all data twice.  BE WARNED!  When this class reallocates
     // memory, all old references to _data are invalid!
     //operator const char*() const { return _data; }
-    inline int GetSize() const  //in bytes - including terminating NULL char.
+    inline size_t GetSize() const  //in bytes - including terminating NULL char.
     {
         return m_size;
     }
 
-    inline int GetLength() const  
+    inline size_t GetLength() const  
     {
         return (m_size >= 1) ? m_size-1 : 0;
     }
 
 private:
     char* m_data;
-    int   m_size;
+    size_t   m_size;
 };
 
 #endif
