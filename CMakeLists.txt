@@ -4,6 +4,9 @@ cmake_minimum_required(VERSION 2.6)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR})
 
+find_program(CMAKE_ASM_NASM_COMPILER nasm
+  PATHS ${ADDON_DEPENDS_PATH}/bin)
+
 find_package(Kodi REQUIRED)
 
 include_directories(${PROJECT_SOURCE_DIR}/lib/vis_milk2
@@ -21,7 +24,7 @@ endif()
 
 build_addon(visualization.milkdrop2 MD2 DEPLIBS)
 
-add_executable(Milkdrop2StandAlone EXCLUDE_FROM_ALL src/StandAlone.cpp)
+add_executable(Milkdrop2StandAlone WIN32 EXCLUDE_FROM_ALL src/StandAlone.cpp)
 target_link_libraries(Milkdrop2StandAlone ${DEPLIBS})
 
 include(CPack)

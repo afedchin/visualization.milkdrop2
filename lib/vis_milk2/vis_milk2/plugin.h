@@ -552,7 +552,7 @@ public:
         int         m_nFramesSinceResize;
 
         char        m_szShaderIncludeText[32768];     // note: this still has char 13's and 10's in it - it's never edited on screen or loaded/saved with a preset.
-        int         m_nShaderIncludeTextLen;          //  # of chars, not including the final NULL.
+        size_t      m_nShaderIncludeTextLen;          //  # of chars, not including the final NULL.
         char        m_szDefaultWarpVShaderText[32768]; // THIS HAS CHAR 13/10 CONVERTED TO LINEFEED_CONTROL_CHAR
         char        m_szDefaultWarpPShaderText[32768]; // THIS HAS CHAR 13/10 CONVERTED TO LINEFEED_CONTROL_CHAR
         char        m_szDefaultCompVShaderText[32768]; // THIS HAS CHAR 13/10 CONVERTED TO LINEFEED_CONTROL_CHAR
@@ -629,7 +629,7 @@ public:
         void        UvToMathSpace(float u, float v, float* rad, float* ang);
         void        ApplyShaderParams(CShaderParams* p, CConstantTable* pCT, CState* pState);
         void        RestoreShaderParams();
-        bool        AddNoiseTex(const wchar_t* szTexName, int size, int zoom_factor);
+        bool        AddNoiseTex(const wchar_t* szTexName, size_t size, int zoom_factor);
         bool        AddNoiseVol(const wchar_t* szTexName, int size, int zoom_factor);
 
 

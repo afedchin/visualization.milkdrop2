@@ -74,9 +74,9 @@ static void MungeFPCW( WORD *pwOldCW )
     if (pwOldCW) *pwOldCW = wSave;
   //  return ret;
 #else
-	_controlfp(_PC_24, _MCW_PC); // single precision
-	_controlfp(_RC_NEAR, _MCW_RC); // round to nearest mode
-	_controlfp(_EM_ZERODIVIDE, _EM_ZERODIVIDE);  // disable divide-by-zero
+	//_controlfp(_PC_24, _MCW_PC); // single precision
+	//_controlfp(_RC_NEAR, _MCW_RC); // round to nearest mode
+	//_controlfp(_EM_ZERODIVIDE, _EM_ZERODIVIDE);  // disable divide-by-zero
 #endif
 }
 
@@ -1649,9 +1649,9 @@ void CPlugin::WarpedBlit_NoShaders(int nPass, bool bAlphaBlend, bool bFlipAlpha,
                 //DWORD d1 = (tempv[i-3].Diffuse >> 24);
                 //DWORD d2 = (tempv[i-2].Diffuse >> 24);
                 //DWORD d3 = (tempv[i-1].Diffuse >> 24);
-                DWORD d1 = (tempv[i - 3].a * 255);
-                DWORD d2 = (tempv[i - 2].a * 255);
-                DWORD d3 = (tempv[i - 1].a * 255);
+                DWORD d1 = static_cast<DWORD>(tempv[i - 3].a * 255);
+                DWORD d2 = static_cast<DWORD>(tempv[i - 2].a * 255);
+                DWORD d3 = static_cast<DWORD>(tempv[i - 1].a * 255);
                 bool bIsNeeded;
                 if (nAlphaTestValue) 
                     bIsNeeded = ((d1 & d2 & d3) < 255);//(d1 < 255) || (d2 < 255) || (d3 < 255);
@@ -1868,9 +1868,9 @@ void CPlugin::WarpedBlit_Shaders(int nPass, bool bAlphaBlend, bool bFlipAlpha, b
                         //DWORD d1 = (tempv[i-3].Diffuse >> 24);
                         //DWORD d2 = (tempv[i-2].Diffuse >> 24);
                         //DWORD d3 = (tempv[i-1].Diffuse >> 24);
-                        DWORD d1 = (tempv[i - 3].a * 255);
-                        DWORD d2 = (tempv[i - 2].a * 255);
-                        DWORD d3 = (tempv[i - 1].a * 255);
+                        DWORD d1 = static_cast<DWORD>(tempv[i - 3].a * 255);
+                        DWORD d2 = static_cast<DWORD>(tempv[i - 2].a * 255);
+                        DWORD d3 = static_cast<DWORD>(tempv[i - 1].a * 255);
                         bool bIsNeeded;
                         if (nAlphaTestValue) 
                             bIsNeeded = ((d1 & d2 & d3) < 255);//(d1 < 255) || (d2 < 255) || (d3 < 255);
@@ -3615,7 +3615,7 @@ void CPlugin::ApplyShaderParams(CShaderParams* p, CConstantTable* pCT, CState* p
     }
 
     // bind "texsize_XYZ" params
-    int N = p->texsize_params.size();
+    auto N = p->texsize_params.size();
     for (int i=0; i<N; i++)
     {
         TexSizeParamInfo* q = &(p->texsize_params[i]);
@@ -4193,7 +4193,7 @@ void CPlugin::ShowToUser_Shaders(int nPass, bool bAlphaBlend, bool bFlipAlpha, b
                 p->r = col[0];
                 p->g = col[1];
                 p->b = col[2];
-                p->a = alpha;
+                p->a = static_cast<float>(alpha);
             }
         }
     }
@@ -4259,9 +4259,9 @@ void CPlugin::ShowToUser_Shaders(int nPass, bool bAlphaBlend, bool bFlipAlpha, b
                     tempv[i++] = m_comp_verts[ m_comp_indices[src_idx++] ];
                 if (bCullTiles)
                 {
-                    DWORD d1 = (tempv[i-3].a * 255);
-                    DWORD d2 = (tempv[i-2].a * 255);
-                    DWORD d3 = (tempv[i-1].a * 255);
+                    DWORD d1 = static_cast<DWORD>(tempv[i-3].a * 255);
+                    DWORD d2 = static_cast<DWORD>(tempv[i-2].a * 255);
+                    DWORD d3 = static_cast<DWORD>(tempv[i-1].a * 255);
                     bool bIsNeeded;
                     if (nAlphaTestValue) 
                         bIsNeeded = ((d1 & d2 & d3) < 255);//(d1 < 255) || (d2 < 255) || (d3 < 255);

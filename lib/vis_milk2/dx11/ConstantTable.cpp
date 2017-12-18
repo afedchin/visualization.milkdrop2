@@ -100,7 +100,7 @@ bool CConstantTable::GrabShaderData(ID3D11Device* pDevice)
     m_ConstantBuffers.push_back(constantBuffer);
   }
 
-  for (size_t i = 0; i < ShaderDesc.BoundResources; i++)
+  for (uint32_t i = 0; i < ShaderDesc.BoundResources; i++)
   {
     ShaderBinding shaderBinding;
     m_pReflection->GetResourceBindingDesc(i, &shaderBinding.Description);
@@ -111,9 +111,9 @@ bool CConstantTable::GrabShaderData(ID3D11Device* pDevice)
   return true;
 }
 
-int CConstantTable::GetVariablesCount()
+size_t CConstantTable::GetVariablesCount()
 {
-  int total = 0;
+  size_t total = 0;
   for (size_t i = 0; i < m_ConstantBuffers.size(); i++)
     total += m_ConstantBuffers[i].Variables.size();
 
@@ -217,7 +217,7 @@ bool CConstantTable::ApplyChanges(ID3D11DeviceContext* pContext)
   return false;
 }
 
-ShaderVariable* CConstantTable::GetVariableByIndex(UINT index)
+ShaderVariable* CConstantTable::GetVariableByIndex(size_t index)
 {
   for (size_t i = 0; i < m_ConstantBuffers.size(); i++)
   {
@@ -231,7 +231,7 @@ ShaderVariable* CConstantTable::GetVariableByIndex(UINT index)
   return nullptr;
 }
 
-ShaderBinding* CConstantTable::GetBindingByIndex(UINT index)
+ShaderBinding* CConstantTable::GetBindingByIndex(size_t index)
 {
   if (index < m_Bindings.size())
     return &m_Bindings[index];

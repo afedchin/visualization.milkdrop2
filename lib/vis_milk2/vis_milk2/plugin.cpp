@@ -1083,6 +1083,11 @@ void CPlugin::MyReadConfig()
 
 	GetPrivateProfileStringW(L"settings",L"szPresetDir",m_szPresetDir,m_szPresetDir,sizeof(m_szPresetDir),pIni);
 #endif
+  m_nTexSizeY = m_nTexSizeX;
+  m_bTexSizeWasAutoPow2 = (m_nTexSizeX == -2);
+  m_bTexSizeWasAutoExact = (m_nTexSizeX == -1);
+  m_nGridY = m_nGridX * 3 / 4;
+
 	// bounds-checking:
 	if (m_nGridX > MAX_GRID_X)
 		m_nGridX = MAX_GRID_X;
@@ -2253,7 +2258,7 @@ DWORD dwCubicInterpolate(DWORD y0, DWORD y1, DWORD y2, DWORD y3, float t)
     return ret;
 }
 
-bool CPlugin::AddNoiseTex(const wchar_t* szTexName, int size, int zoom_factor)
+bool CPlugin::AddNoiseTex(const wchar_t* szTexName, size_t size, int zoom_factor)
 {
     // size = width & height of the texture; 
     // zoom_factor = how zoomed-in the texture features should be.
@@ -2267,10 +2272,10 @@ bool CPlugin::AddNoiseTex(const wchar_t* szTexName, int size, int zoom_factor)
     // Synthesize noise texture(s)
     ID3D11Texture2D *pNoiseTex = NULL, *pStaging = NULL;
     // try twice - once with mips, once without.
-    int i;
-    //for (i=0; i<2; i++) 
+    //for (int i=0; i<2; i++) 
     {
-        if (!lpDevice->CreateTexture(size, size, 1, D3D11_BIND_SHADER_RESOURCE, DXGI_FORMAT_R8G8B8A8_UNORM, &pNoiseTex, 0, D3D11_USAGE_DYNAMIC))
+        auto s = static_cast<uint32_t>(size);
+        if (!lpDevice->CreateTexture(s, s, 1, D3D11_BIND_SHADER_RESOURCE, DXGI_FORMAT_R8G8B8A8_UNORM, &pNoiseTex, 0, D3D11_USAGE_DYNAMIC))
         {
             //if (i==1) 
             {
@@ -2348,7 +2353,7 @@ bool CPlugin::AddNoiseTex(const wchar_t* szTexName, int size, int zoom_factor)
             for (int x=0; x<size; x++) 
                 if (x % zoom_factor)
                 {
-                    int base_x = (x/zoom_factor)*zoom_factor + size;
+                    int base_x = (x/zoom_factor)*zoom_factor + static_cast<int>(size);
                     int base_y = y*dwords_per_line;
                     DWORD y0 = dst[ base_y + ((base_x - zoom_factor  ) % size) ];
                     DWORD y1 = dst[ base_y + ((base_x                ) % size) ];
@@ -2367,7 +2372,7 @@ bool CPlugin::AddNoiseTex(const wchar_t* szTexName, int size, int zoom_factor)
             for (int y=0; y<size; y++)
                 if (y % zoom_factor)
                 {
-                    int base_y = (y/zoom_factor)*zoom_factor + size;
+                    int base_y = (y/zoom_factor)*zoom_factor + static_cast<int>(size);
                     DWORD y0 = dst[ ((base_y - zoom_factor  ) % size)*dwords_per_line + x ];
                     DWORD y1 = dst[ ((base_y                ) % size)*dwords_per_line + x ];
                     DWORD y2 = dst[ ((base_y + zoom_factor  ) % size)*dwords_per_line + x ];
@@ -2393,8 +2398,8 @@ bool CPlugin::AddNoiseTex(const wchar_t* szTexName, int size, int zoom_factor)
     wcscpy(x.texname, szTexName);
     x.texptr  = pNoiseTex;
     //x.texsize_param = NULL;
-    x.w = size;
-    x.h = size;
+    x.w = static_cast<int>(size);
+    x.h = static_cast<int>(size);
     x.d = 1;
     x.bEvictable    = false;
     x.nAge          = m_nPresetsLoadedTotal;
@@ -2452,7 +2457,7 @@ bool CPlugin::AddNoiseVol(const wchar_t* szTexName, int size, int zoom_factor)
 */
 		return false;
     }
-    if (r.RowPitch < size*4 || r.DepthPitch < size*size*4)
+    if (r.RowPitch < static_cast<UINT>(size*4) || r.DepthPitch < static_cast<UINT>(size*size*4))
     {
 /*
 		WASABI_API_LNGSTRINGW_BUF(IDS_3D_NOISE_TEXTURE_BYTE_LAYOUT_NOT_RECOGNISED,buf,sizeof(buf));
@@ -2601,7 +2606,7 @@ CShaderParams::CShaderParams() {
 }
 
 CShaderParams::~CShaderParams() {
-    int N = global_CShaderParams_master_list.size();
+    auto N = global_CShaderParams_master_list.size();
     for (int i=0; i<N; i++)
         if (global_CShaderParams_master_list[i] == this)
             global_CShaderParams_master_list.eraseAt(i);
@@ -2643,7 +2648,7 @@ bool CPlugin::EvictSomeTexture()
     {
         int nEvictableFiles = 0;
         int nEvictableBytes = 0;
-        int N = m_textures.size();
+        auto N = m_textures.size();
         for (int i=0; i<N; i++)
             if (m_textures[i].bEvictable && m_textures[i].texptr) 
             {
@@ -2656,7 +2661,7 @@ bool CPlugin::EvictSomeTexture()
     }
     #endif
 
-    int N = m_textures.size();
+    auto N = m_textures.size();
     
     // find age gap
     int newest = 99999999;
@@ -2769,8 +2774,8 @@ bool PickRandomTexture(const wchar_t* prefix, wchar_t* szRetTextureFilename)  //
     {
         // only pick from files w/the right prefix
         StringVec temp_list;
-        int N = texfiles.size();
-        int len = wcslen(prefix);
+        auto N = texfiles.size();
+        auto len = wcslen(prefix);
 		int i;
         for (i=0; i<N; i++) 
             if (!_wcsnicmp(prefix, texfiles[i].c_str(), len))
@@ -2980,7 +2985,7 @@ void CShaderParams::CacheParams(CConstantTable* pCT, bool bHardErrors)
                 // see if <szRootName>.tga or .jpg has already been loaded.
                 //   (if so, grab a pointer to it)
                 //   (if NOT, create & load it).
-                int N = g_plugin.m_textures.size();
+                auto N = g_plugin.m_textures.size();
                 for (int n=0; n<N; n++) {
                     if (!wcscmp(g_plugin.m_textures[n].texname, szRootName))
                     {
@@ -3005,7 +3010,7 @@ void CShaderParams::CacheParams(CConstantTable* pCT, bool bHardErrors)
                     {
                         int nTexturesCached = 0;
                         int nBytesCached = 0;
-                        int N = g_plugin.m_textures.size();
+                        auto N = g_plugin.m_textures.size();
                         for (int i=0; i<N; i++)
                             if (g_plugin.m_textures[i].bEvictable && g_plugin.m_textures[i].texptr)
                             {
@@ -3192,7 +3197,7 @@ void CShaderParams::CacheParams(CConstantTable* pCT, bool bHardErrors)
 
                     // see if <szRootName>.tga or .jpg has already been loaded.
                     bool bTexFound = false;
-                    int N = g_plugin.m_textures.size();
+                    auto N = g_plugin.m_textures.size();
                     for (int n=0; n<N; n++) {
                         if (!wcscmp(g_plugin.m_textures[n].texname, szRootName))
                         {
@@ -3368,7 +3373,7 @@ bool CPlugin::LoadShaderFromMemory( const char* szOrigShaderText, char* szFn, ch
 
     char szShaderText[128000];
     char temp[128000];
-    int writePos = 0;
+    size_t writePos = 0;
 
     // paste the universal #include
     strcpy(&szShaderText[writePos], m_szShaderIncludeText);  // first, paste in the contents of 'inputs.fx' before the actual shader text.  Has 13's and 10's.
@@ -3388,7 +3393,7 @@ bool CPlugin::LoadShaderFromMemory( const char* szOrigShaderText, char* szFn, ch
 
     // paste in the shader itself - converting LCC's to 13+10's.
     // avoid lstrcpy b/c it might not handle the linefeed stuff...?
-    int shaderStartPos = writePos;
+    auto shaderStartPos = writePos;
     {
         const char *s = szOrigShaderText;
         char *d = &szShaderText[writePos];
@@ -3503,7 +3508,7 @@ bool CPlugin::LoadShaderFromMemory( const char* szOrigShaderText, char* szFn, ch
     // now really try to compile it.
 
 	bool failed=false;
-    int len = strlen(szShaderText);
+    auto len = strlen(szShaderText);
     ID3DBlob *pCode, *pErrors;
 #if _DEBUG
     int flags = D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY;
@@ -3917,7 +3922,7 @@ void CPlugin::dumpmsg(wchar_t *s)
         OutputDebugStringW(s);
         if (s[0]) 
         {
-            int len = wcslen(s);
+            auto len = wcslen(s);
             if (s[len-1] != L'\n')
                 OutputDebugStringW(L"\n");
         }
@@ -4437,9 +4442,11 @@ static unsigned int WINAPI __UpdatePresetList(void* lpVoid)
 {
     // NOTE - this is run in a separate thread!!!
 
-    DWORD flags = (DWORD)lpVoid;
-    bool bForce = (flags & 1) ? true : false;
-    bool bTryReselectCurrentPreset = (flags & 2) ? true : false;
+    auto flags = static_cast<DWORD*>(lpVoid);
+    bool bForce = (*flags & 1) ? true : false;
+    bool bTryReselectCurrentPreset = (*flags & 2) ? true : false;
+
+    delete flags;
 
     WIN32_FIND_DATAW fd;
     ZeroMemory(&fd, sizeof(fd));
@@ -4542,7 +4549,7 @@ retry:
 		else
 		{
 			// skip normal files not ending in ".milk"
-			int len = wcslen(fd.cFileName);
+			auto len = wcslen(fd.cFileName);
 			if (len < 5 || _wcsicmp(fd.cFileName + len - 5, L".milk") != 0)
 				bSkip = true;					
 
@@ -4565,7 +4572,7 @@ retry:
                     char *p = szLine;
 
                     int bytes_to_read = sizeof(szLine)-1;
-                    int count = fread(szLine, bytes_to_read, 1, f);
+                    auto count = fread(szLine, bytes_to_read, 1, f);
                     if (count < 1) {
                         fseek(f, SEEK_SET, 0);
                         count = fread(szLine, 1, bytes_to_read, f);
@@ -4772,7 +4779,7 @@ void CPlugin::UpdatePresetList(bool bBackground, bool bForce, bool bTryReselectC
     assert(!g_bThreadAlive); 
 
     // spawn new thread:
-    DWORD flags = (bForce ? 1 : 0) | (bTryReselectCurrentPreset ? 2 : 0);
+    auto flags = new DWORD((bForce ? 1 : 0) | (bTryReselectCurrentPreset ? 2 : 0));
     g_bThreadShouldQuit = false;
     g_bThreadAlive = true;
     g_hThread = (HANDLE)_beginthreadex(NULL,0,__UpdatePresetList,(void*)flags,0,0);

@@ -84,8 +84,8 @@ public:
   }
 
   bool GrabShaderData(ID3D11Device* pDevice);
-  int  GetVariablesCount();
-  int  GetBuffersCount() { return m_ConstantBuffers.size(); }
+  size_t  GetVariablesCount();
+  size_t  GetBuffersCount() { return m_ConstantBuffers.size(); }
   void GetBuffers(ID3D11Buffer** ppBuffers);;
   int  GetTextureSlot(std::string& strName);
 
@@ -93,9 +93,9 @@ public:
   bool SetMatrix(LPCSTR handle, XMMATRIX* matrix);
   bool ApplyChanges(ID3D11DeviceContext* pContext);
 
-  ShaderVariable* GetVariableByIndex(UINT index);
+  ShaderVariable* GetVariableByIndex(size_t index);
   ShaderVariable* GetVariableByName(std::string& strName);
-  ShaderBinding*  GetBindingByIndex(UINT index);
+  ShaderBinding*  GetBindingByIndex(size_t index);
 
   D3D_FEATURE_LEVEL       MinimumFeatureLevel;
   D3D11_SHADER_DESC       ShaderDesc;

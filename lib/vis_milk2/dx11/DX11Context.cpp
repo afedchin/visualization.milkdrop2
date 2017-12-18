@@ -107,13 +107,13 @@ void DX11Context::Initialize()
   m_pDevice->CreateBuffer(&bDesc, NULL, &m_pIBuffer);
 
   std::vector<uint16_t> indicies;
-  for (size_t i = 1; i < MAX_VERTICES_COUNT / 6 - 2; ++i)
+  for (uint16_t i = 1; i < MAX_VERTICES_COUNT / 6 - 2; ++i)
   {
     indicies.push_back(0);
     indicies.push_back(i);
     indicies.push_back(i + 1);
   }
-  bDesc.ByteWidth = sizeof(uint16_t) * indicies.size();
+  bDesc.ByteWidth = static_cast<uint32_t>(sizeof(uint16_t) * indicies.size());
   bDesc.Usage = D3D11_USAGE_IMMUTABLE;
   bDesc.CPUAccessFlags = 0;
   D3D11_SUBRESOURCE_DATA bData = { indicies.data() };
@@ -450,7 +450,7 @@ void DX11Context::SetVertexShader(ID3D11VertexShader* pVShader, CConstantTable* 
     pTable->ApplyChanges(m_pContext);
     ID3D11Buffer** ppBuffers = new ID3D11Buffer*[pTable->GetBuffersCount()];
     pTable->GetBuffers(ppBuffers);
-    m_pContext->VSSetConstantBuffers(0, pTable->GetBuffersCount(), ppBuffers);
+    m_pContext->VSSetConstantBuffers(0, static_cast<uint32_t>(pTable->GetBuffersCount()), ppBuffers);
     delete[] ppBuffers;
   }
   m_pContext->VSSetShader((pVShader ? pVShader : m_pVShader), NULL, 0);
@@ -463,7 +463,7 @@ void DX11Context::SetPixelShader(ID3D11PixelShader* pPShader, CConstantTable* pT
     pTable->ApplyChanges(m_pContext);
     ID3D11Buffer** ppBuffers = new ID3D11Buffer*[pTable->GetBuffersCount()];
     pTable->GetBuffers(ppBuffers);
-    m_pContext->PSSetConstantBuffers(0, pTable->GetBuffersCount(), ppBuffers);
+    m_pContext->PSSetConstantBuffers(0, static_cast<uint32_t>(pTable->GetBuffersCount()), ppBuffers);
     delete[] ppBuffers;
   }
   m_pContext->PSSetShader((pPShader ? pPShader : m_pPShader[m_uCurrShader]), NULL, 0);
