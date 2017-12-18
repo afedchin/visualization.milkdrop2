@@ -78,7 +78,6 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   )
 else()
   set(SOURCES ${SOURCES} 
-    ns-eel2/asm-nseel-x86-msvc.c
     ns-eel2/glue_x86.h
   )
 endif()
