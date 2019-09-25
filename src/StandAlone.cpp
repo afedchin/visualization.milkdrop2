@@ -200,25 +200,25 @@ HRESULT CreateDevice(int iWidth, int iHeight)
 
 LRESULT CALLBACK StaticWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
-	switch( uMsg )
-	{
-	case WM_CLOSE:
-		{
-			HMENU hMenu;
-			hMenu = GetMenu( hWnd );
-			if( hMenu != NULL )
-				DestroyMenu( hMenu );
-			DestroyWindow( hWnd );
-			UnregisterClass( "Direct3DWindowClass", NULL );
-			return 0;
-		}
+  switch( uMsg )
+  {
+  case WM_CLOSE:
+    {
+      HMENU hMenu;
+      hMenu = GetMenu( hWnd );
+      if( hMenu != NULL )
+        DestroyMenu( hMenu );
+      DestroyWindow( hWnd );
+      UnregisterClass( "Direct3DWindowClass", NULL );
+      return 0;
+    }
 
-	case WM_DESTROY:
-		PostQuitMessage( 0 );
-		break;
-	}
+  case WM_DESTROY:
+    PostQuitMessage( 0 );
+    break;
+  }
 
-	return DefWindowProc( hWnd, uMsg, wParam, lParam );
+  return DefWindowProc( hWnd, uMsg, wParam, lParam );
 }
 
 float sin1add = 0.05f;
@@ -228,126 +228,126 @@ void RenderFrame()
   float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
   pImmediateContext->ClearRenderTargetView(pRenderTargetView, color);
 
-	float waves[576*2];
-	static float sin1 = 0;
-	static float sin2 = 0;
-	
-//	sin1 += 10;
-//	sin2 += 20;
+  float waves[576*2];
+  static float sin1 = 0;
+  static float sin2 = 0;
 
-	float sin1start = sin1;
-	float sin2start = sin2;
+//  sin1 += 10;
+//  sin2 += 20;
 
-	float Current = 0;
-	for ( int i=0; i < 576; i++)
-	{
-// 		if ( ( rand() % 10) > 4)
-// 			iCurrent += (short)(rand() % (255));
-// 		else
-// 			iCurrent -= (short)(rand() % (255));
-		Current = sinf(sin1+sin2);
-//		Current += sinf(sin2);
-		sin1 += sin1add;
-		sin2 += sin2add;
-		waves[i*2+0] = Current*0.2f;
-		waves[i*2+1] = Current*0.2f;
-//		waves[0][i] = (rand() % 128 ) / 128.0f;//iCurrent;//iCurrent;
-	//	waves[1][i] = (rand() % 128 ) / 128.0f;//iCurrent;//iCurrent;
-	}
-	sin1 = sin1start + sin1add;
-	sin2 = sin2start + sin2add*7;
+  float sin1start = sin1;
+  float sin2start = sin2;
 
-	g_plugin.PluginRender((unsigned char*) &waves[0], (unsigned char*)&waves[1] );
+  float Current = 0;
+  for ( int i=0; i < 576; i++)
+  {
+//    if ( ( rand() % 10) > 4)
+//      iCurrent += (short)(rand() % (255));
+//    else
+//      iCurrent -= (short)(rand() % (255));
+    Current = sinf(sin1+sin2);
+//    Current += sinf(sin2);
+    sin1 += sin1add;
+    sin2 += sin2add;
+    waves[i*2+0] = Current*0.2f;
+    waves[i*2+1] = Current*0.2f;
+//    waves[0][i] = (rand() % 128 ) / 128.0f;//iCurrent;//iCurrent;
+  //  waves[1][i] = (rand() % 128 ) / 128.0f;//iCurrent;//iCurrent;
+  }
+  sin1 = sin1start + sin1add;
+  sin2 = sin2start + sin2add*7;
+
+  g_plugin.PluginRender((unsigned char*) &waves[0], (unsigned char*)&waves[1] );
 
   pSwapChain->Present(1, 0);
 }
 
 void MainLoop()
 {
-	bool bGotMsg;
-	MSG msg;
-	msg.message = WM_NULL;
-	PeekMessage( &msg, NULL, 0U, 0U, PM_NOREMOVE );
+  bool bGotMsg;
+  MSG msg;
+  msg.message = WM_NULL;
+  PeekMessage( &msg, NULL, 0U, 0U, PM_NOREMOVE );
 
-	while( WM_QUIT != msg.message )
-	{
-		// Use PeekMessage() so we can use idle time to render the scene. 
-		bGotMsg = ( PeekMessage( &msg, NULL, 0U, 0U, PM_REMOVE ) != 0 );
+  while( WM_QUIT != msg.message )
+  {
+    // Use PeekMessage() so we can use idle time to render the scene. 
+    bGotMsg = ( PeekMessage( &msg, NULL, 0U, 0U, PM_REMOVE ) != 0 );
 
-		if( bGotMsg )
-		{
-			TranslateMessage( &msg );
-			DispatchMessage( &msg );
-		}
-		else
-		{
-			// Render a frame during idle time (no messages are waiting)
-			RenderFrame();
-		}
-	}
+    if( bGotMsg )
+    {
+      TranslateMessage( &msg );
+      DispatchMessage( &msg );
+    }
+    else
+    {
+      // Render a frame during idle time (no messages are waiting)
+      RenderFrame();
+    }
+  }
 }
 
 
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCmdShow)
 {
-	_CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
-	_CrtSetBreakAlloc(60);
+  _CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
+  _CrtSetBreakAlloc(60);
 
-	// Register the windows class
-	WNDCLASS wndClass;
-	wndClass.style = CS_DBLCLKS;
-	wndClass.lpfnWndProc = StaticWndProc;
-	wndClass.cbClsExtra = 0;
-	wndClass.cbWndExtra = 0;
-	wndClass.hInstance = hInstance;
-	wndClass.hIcon = NULL;
-	wndClass.hCursor = LoadCursor( NULL, IDC_ARROW );
-	wndClass.hbrBackground = ( HBRUSH )GetStockObject( BLACK_BRUSH );
-	wndClass.lpszMenuName = NULL;
-	wndClass.lpszClassName = "Direct3DWindowClass";
+  // Register the windows class
+  WNDCLASS wndClass;
+  wndClass.style = CS_DBLCLKS;
+  wndClass.lpfnWndProc = StaticWndProc;
+  wndClass.cbClsExtra = 0;
+  wndClass.cbWndExtra = 0;
+  wndClass.hInstance = hInstance;
+  wndClass.hIcon = NULL;
+  wndClass.hCursor = LoadCursor( NULL, IDC_ARROW );
+  wndClass.hbrBackground = ( HBRUSH )GetStockObject( BLACK_BRUSH );
+  wndClass.lpszMenuName = NULL;
+  wndClass.lpszClassName = "Direct3DWindowClass";
 
-	if( !RegisterClass( &wndClass ) )
-	{
-		DWORD dwError = GetLastError();
-		if( dwError != ERROR_CLASS_ALREADY_EXISTS )
-			return -1;
-	}
+  if( !RegisterClass( &wndClass ) )
+  {
+    DWORD dwError = GetLastError();
+    if( dwError != ERROR_CLASS_ALREADY_EXISTS )
+      return -1;
+  }
 
-	// Find the window's initial size, but it might be changed later
-	int nDefaultWidth = 1280;
-	int nDefaultHeight = 720;
+  // Find the window's initial size, but it might be changed later
+  int nDefaultWidth = 1280;
+  int nDefaultHeight = 720;
 
-	RECT rc;
-	SetRect( &rc, 0, 0, nDefaultWidth, nDefaultHeight );
-	AdjustWindowRect( &rc, WS_OVERLAPPEDWINDOW, false );
+  RECT rc;
+  SetRect( &rc, 0, 0, nDefaultWidth, nDefaultHeight );
+  AdjustWindowRect( &rc, WS_OVERLAPPEDWINDOW, false );
 
-	// Create the render window
-	HWND hWnd = CreateWindow( "Direct3DWindowClass", "MD2", WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT, ( rc.right - rc.left ), ( rc.bottom - rc.top ), 0,
-		NULL, hInstance, 0 );
-	if( hWnd == NULL )
-	{
-		DWORD dwError = GetLastError();
-		return -1;
-	}
-	gHWND = hWnd;
+  // Create the render window
+  HWND hWnd = CreateWindow( "Direct3DWindowClass", "MD2", WS_OVERLAPPEDWINDOW,
+    CW_USEDEFAULT, CW_USEDEFAULT, ( rc.right - rc.left ), ( rc.bottom - rc.top ), 0,
+    NULL, hInstance, 0 );
+  if( hWnd == NULL )
+  {
+    DWORD dwError = GetLastError();
+    return -1;
+  }
+  gHWND = hWnd;
 
-	ShowWindow( hWnd, SW_SHOW );
+  ShowWindow( hWnd, SW_SHOW );
 
-	if (S_OK != CreateDevice( nDefaultWidth, nDefaultHeight ))
+  if (S_OK != CreateDevice( nDefaultWidth, nDefaultHeight ))
     return -1;
 
   BOOL bSuccess;
   bSuccess = g_plugin.PluginPreInitialize(nullptr, nullptr);
   if (!bSuccess)
     return -1;
-	bSuccess = g_plugin.PluginInitialize( pImmediateContext, 0, 0, nDefaultWidth, nDefaultHeight, nDefaultHeight / (float)nDefaultWidth);
+  bSuccess = g_plugin.PluginInitialize( pImmediateContext, 0, 0, nDefaultWidth, nDefaultHeight, nDefaultHeight / (float)nDefaultWidth);
   if (!bSuccess)
     return -1;
 
-	MainLoop();
+  MainLoop();
 
-	g_plugin.PluginQuit();
+  g_plugin.PluginQuit();
 
   pImmediateContext->Flush();
   pImmediateContext->ClearState();
@@ -357,8 +357,8 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine
   pSwapChain->Release();
   pImmediateContext->Release();
   pD3DDevice->Release();
-	
-	return 0;
+
+  return 0;
 }
 
 

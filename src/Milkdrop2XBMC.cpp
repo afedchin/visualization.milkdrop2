@@ -37,25 +37,25 @@ class CVisualizationMilkdrop2
   , public kodi::addon::CInstanceVisualization
 {
 public:
-  virtual ~CVisualizationMilkdrop2();
+  ~CVisualizationMilkdrop2() override;
 
-  virtual ADDON_STATUS Create() override;
-  virtual void Stop() override;
-  virtual void AudioData(const float* audioData, int audioDataLength, float* freqData, int freqDataLength) override;
-  virtual void Render() override;
-  virtual bool GetPresets(std::vector<std::string>& presets) override;
-  virtual int GetActivePreset() override;
-  virtual bool IsLocked() override { return g_plugin.m_bPresetLockedByUser; }
-  virtual bool PrevPreset() override;
-  virtual bool NextPreset() override;
-  virtual bool LoadPreset(int select) override;
-  virtual bool RandomPreset() override;
-  virtual bool LockPreset(bool lockUnlock) override;
+  ADDON_STATUS Create() override;
+  void Stop() override;
+  void AudioData(const float* audioData, int audioDataLength, float* freqData, int freqDataLength) override;
+  void Render() override;
+  bool GetPresets(std::vector<std::string>& presets) override;
+  int GetActivePreset() override;
+  bool IsLocked() override { return g_plugin.m_bPresetLockedByUser; }
+  bool PrevPreset() override;
+  bool NextPreset() override;
+  bool LoadPreset(int select) override;
+  bool RandomPreset() override;
+  bool LockPreset(bool lockUnlock) override;
 };
 
 ADDON_STATUS CVisualizationMilkdrop2::Create()
 {
-	swprintf(g_plugin.m_szPluginsDirPath, L"%hs\\resources\\", Presets().c_str());
+  swprintf(g_plugin.m_szPluginsDirPath, L"%hs\\resources\\", Presets().c_str());
 
   if (FALSE == g_plugin.PluginPreInitialize(0, 0))
     return ADDON_STATUS_UNKNOWN;
@@ -64,39 +64,39 @@ ADDON_STATUS CVisualizationMilkdrop2::Create()
     return ADDON_STATUS_UNKNOWN;
 
   IsInitialized = true;
-	return ADDON_STATUS_OK;
+  return ADDON_STATUS_OK;
 }
 
 void CVisualizationMilkdrop2::Stop()
 {
-	if( IsInitialized )
-	{
-		g_plugin.PluginQuit();
-	
-		IsInitialized = false;
-	}
+  if( IsInitialized )
+  {
+    g_plugin.PluginQuit();
+
+    IsInitialized = false;
+  }
 }
 
 unsigned char waves[2][576];
 
 void CVisualizationMilkdrop2::AudioData(const float* pAudioData, int iAudioDataLength, float *pFreqData, int iFreqDataLength)
 {
-	int ipos=0;
-	while (ipos < 576)
-	{
-		for (int i=0; i < iAudioDataLength; i+=2)
-		{
-			waves[0][ipos] = char (pAudioData[i] * 255.0f);
-			waves[1][ipos] = char (pAudioData[i+1]  * 255.0f);
-			ipos++;
-			if (ipos >= 576) break;
-		}
-	}
+  int ipos=0;
+  while (ipos < 576)
+  {
+    for (int i=0; i < iAudioDataLength; i+=2)
+    {
+      waves[0][ipos] = char (pAudioData[i] * 255.0f);
+      waves[1][ipos] = char (pAudioData[i+1]  * 255.0f);
+      ipos++;
+      if (ipos >= 576) break;
+    }
+  }
 }
 
 void CVisualizationMilkdrop2::Render()
 {
-	g_plugin.PluginRender(waves[0], waves[1]);
+  g_plugin.PluginRender(waves[0], waves[1]);
 }
 
 bool CVisualizationMilkdrop2::NextPreset()
@@ -116,7 +116,7 @@ bool CVisualizationMilkdrop2::LoadPreset(int select)
   g_plugin.m_nCurrentPreset = select + g_plugin.m_nDirs;
 
   wchar_t szFile[MAX_PATH] = { 0 };
-  wcscpy(szFile, g_plugin.m_szPresetDir);	// note: m_szPresetDir always ends with '\'
+  wcscpy(szFile, g_plugin.m_szPresetDir);  // note: m_szPresetDir always ends with '\'
   wcscat(szFile, g_plugin.m_presets[g_plugin.m_nCurrentPreset].szFilename.c_str());
 
   g_plugin.LoadPreset(szFile, 1.0f);
@@ -137,10 +137,10 @@ bool CVisualizationMilkdrop2::RandomPreset()
 
 char* WideToUTF8( const wchar_t* WFilename )
 {
-	int SizeNeeded = WideCharToMultiByte(CP_UTF8, 0, &WFilename[0], -1, NULL, 0, NULL, NULL);
-	char* utf8Name = new char[ SizeNeeded ];
-	WideCharToMultiByte(CP_UTF8, 0, &WFilename[0], -1, &utf8Name[0], SizeNeeded, NULL, NULL);
-	return utf8Name;
+  int SizeNeeded = WideCharToMultiByte(CP_UTF8, 0, &WFilename[0], -1, NULL, 0, NULL, NULL);
+  char* utf8Name = new char[ SizeNeeded ];
+  WideCharToMultiByte(CP_UTF8, 0, &WFilename[0], -1, &utf8Name[0], SizeNeeded, NULL, NULL);
+  return utf8Name;
 }
 
 //-- GetPresets ---------------------------------------------------------------
@@ -148,21 +148,21 @@ char* WideToUTF8( const wchar_t* WFilename )
 //-----------------------------------------------------------------------------
 bool CVisualizationMilkdrop2::GetPresets(std::vector<std::string>& presets)
 {
-	if(!IsInitialized )
-		return false;
+  if(!IsInitialized )
+    return false;
 
-	while( !g_plugin.m_bPresetListReady )
-	{
+  while( !g_plugin.m_bPresetListReady )
+  {
 
-	}
+  }
 
-	for( int i = 0;  i < g_plugin.m_nPresets - g_plugin.m_nDirs; ++i)
-	{
-		PresetInfo& Info = g_plugin.m_presets[ i + g_plugin.m_nDirs ];
+  for( int i = 0;  i < g_plugin.m_nPresets - g_plugin.m_nDirs; ++i)
+  {
+    PresetInfo& Info = g_plugin.m_presets[ i + g_plugin.m_nDirs ];
     presets.push_back(WideToUTF8( Info.szFilename.c_str() ));
-	}
+  }
 
-	return true;
+  return true;
 }
 
 //-- GetPreset ----------------------------------------------------------------
@@ -170,13 +170,13 @@ bool CVisualizationMilkdrop2::GetPresets(std::vector<std::string>& presets)
 //-----------------------------------------------------------------------------
 int CVisualizationMilkdrop2::GetActivePreset()
 {
-	if( IsInitialized )
-	{
-		int CurrentPreset = g_plugin.m_nCurrentPreset;
-		CurrentPreset -= g_plugin.m_nDirs;
-		return CurrentPreset;
-	}
-	return -1;
+  if( IsInitialized )
+  {
+    int CurrentPreset = g_plugin.m_nCurrentPreset;
+    CurrentPreset -= g_plugin.m_nDirs;
+    return CurrentPreset;
+  }
+  return -1;
 }
 
 //-- Destroy-------------------------------------------------------------------
@@ -185,7 +185,7 @@ int CVisualizationMilkdrop2::GetActivePreset()
 //-----------------------------------------------------------------------------
 CVisualizationMilkdrop2::~CVisualizationMilkdrop2()
 {
-	Stop();
+  Stop();
 }
 
 ADDONCREATOR(CVisualizationMilkdrop2) // Don't touch this!
