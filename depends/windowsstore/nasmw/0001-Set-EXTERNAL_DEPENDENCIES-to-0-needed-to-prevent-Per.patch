@@ -1,0 +1,25 @@
+From: Alwin Esch <alwin.esch@web.de>
+Date: Thu, 19 Sep 2019 19:29:39 +0100
+Subject: [PATCH] Set EXTERNAL_DEPENDENCIES to 0, needed to prevent Perl
+
+Perl not available on build system, but test without was OK.
+---
+ Mkfiles/msvc.mak | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Mkfiles/msvc.mak b/Mkfiles/msvc.mak
+index 4112c7f..22da9c6 100644
+--- a/Mkfiles/msvc.mak
++++ b/Mkfiles/msvc.mak
+@@ -364,7 +364,7 @@ everything: all docs nsis
+ # Does this version of this file have external dependencies?  This definition
+ # will be automatically updated by mkdep.pl as needed.
+ #
+-EXTERNAL_DEPENDENCIES = 1
++EXTERNAL_DEPENDENCIES = 0
+ 
+ #
+ # Generate dependency information for this Makefile only.
+-- 
+2.19.2.windows.1
+
