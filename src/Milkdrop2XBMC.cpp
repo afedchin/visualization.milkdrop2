@@ -37,20 +37,20 @@ class CVisualizationMilkdrop2
   , public kodi::addon::CInstanceVisualization
 {
 public:
-  virtual ~CVisualizationMilkdrop2();
+  ~CVisualizationMilkdrop2() override;
 
-  virtual ADDON_STATUS Create() override;
-  virtual void Stop() override;
-  virtual void AudioData(const float* audioData, int audioDataLength, float* freqData, int freqDataLength) override;
-  virtual void Render() override;
-  virtual bool GetPresets(std::vector<std::string>& presets) override;
-  virtual int GetActivePreset() override;
-  virtual bool IsLocked() override { return g_plugin.m_bPresetLockedByUser; }
-  virtual bool PrevPreset() override;
-  virtual bool NextPreset() override;
-  virtual bool LoadPreset(int select) override;
-  virtual bool RandomPreset() override;
-  virtual bool LockPreset(bool lockUnlock) override;
+  ADDON_STATUS Create() override;
+  void Stop() override;
+  void AudioData(const float* audioData, int audioDataLength, float* freqData, int freqDataLength) override;
+  void Render() override;
+  bool GetPresets(std::vector<std::string>& presets) override;
+  int GetActivePreset() override;
+  bool IsLocked() override { return g_plugin.m_bPresetLockedByUser; }
+  bool PrevPreset() override;
+  bool NextPreset() override;
+  bool LoadPreset(int select) override;
+  bool RandomPreset() override;
+  bool LockPreset(bool lockUnlock) override;
 };
 
 ADDON_STATUS CVisualizationMilkdrop2::Create()
