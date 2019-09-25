@@ -107,5 +107,16 @@
     <description lang="zh">MilkDrop 是来自于 Winamp 音乐播放器的可视化效果插件。在你听音乐时，MilkDrop 通过节拍检测触发的无数迷幻的效果，带你与声波一起飞翔，给你带来丰富的音乐和视觉旅程。</description>
     <description lang="zh_TW">MilkDrop是來自於Winamp音樂播放器的視覺效果插件。在您在聽音樂時，MilkDrop通過節奏偵測觸發的無數夢幻的效果，帶您穿越聆聽中的音樂饗宴，也給您帶來豐富的聲音和視覺效果的奇幻旅程。</description>
     <platform>@PLATFORM@</platform>
+    <assets>
+      <icon>resources/icon.png</icon>
+      <fanart>resources/fanart.jpg</fanart>
+      <screenshot>resources/screenshot-01.jpg</screenshot>
+      <screenshot>resources/fanart.jpg</screenshot>
+      <screenshot>resources/screenshot-02.jpg</screenshot>
+      <screenshot>resources/screenshot-03.jpg</screenshot>
+      <screenshot>resources/screenshot-04.jpg</screenshot>
+      <screenshot>resources/screenshot-05.jpg</screenshot>
+      <screenshot>resources/screenshot-06.jpg</screenshot>
+    </assets>
   </extension>
 </addon>
