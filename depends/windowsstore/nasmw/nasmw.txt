@@ -1,1 +1,1 @@
-nasmw http://mirrors.kodi.tv/build-deps/sources/nasm-2.14.02.tar.gz
+nasmw http://mirrors.kodi.tv/build-deps/sources/nasm-2.14.02-win32.zip
