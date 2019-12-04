@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <addon
   id="visualization.milkdrop2"
-  version="2.1.3"
+  version="2.1.4"
   name="MilkDrop 2"
   provider-name="Ryan Geiss, ported by MrC, DX11 by afedchin">
   <requires>@ADDON_DEPENDS@</requires>
